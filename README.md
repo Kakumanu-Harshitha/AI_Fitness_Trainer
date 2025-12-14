@@ -151,4 +151,4 @@ This project showcases how modern AI technologies can be used to build **scalabl
 
 ---
 # Owner
-(Harshitha Kakumanu)[https://github.com/Kakumanu-Harshitha/AI_Fitness_Trainer]
+[Harshitha Kakumanu](https://github.com/Kakumanu-Harshitha/AI_Fitness_Trainer)
