@@ -1,0 +1,16 @@
+opencv-python
+mediapipe
+numpy
+speechrecognition
+pyaudio
+gTTS
+playsound==1.3.0
+groq
+requests
+
+fastapi
+uvicorn
+sqlalchemy
+passlib[bcrypt]
+python-jose
+python-multipart
