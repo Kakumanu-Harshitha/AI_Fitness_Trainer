@@ -4,6 +4,7 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from jose import jwt
 import os
+import hashlib
 
 from .models import User
 from .schemas import UserRegister, UserLogin, UserResponse, TokenResponse
@@ -18,11 +19,12 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
-
+    sha256_hash = hashlib.sha256(password.encode("utf-8")).hexdigest()
+    return pwd_context.hash(sha256_hash)
 
 def verify_password(password: str, hashed: str) -> bool:
-    return pwd_context.verify(password, hashed)
+    sha256_hash = hashlib.sha256(password.encode("utf-8")).hexdigest()
+    return pwd_context.verify(sha256_hash, hashed)
 
 
 def create_access_token(username: str):
