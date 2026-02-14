@@ -75,26 +75,57 @@ async def get_user_stats(
         count = day_res.scalar() or 0
         weekly_workouts.append(int(count))
 
-    # 4. Joint Stress (Mocked for now as it needs more complex vision data)
-    joint_stress = [45, 32, 28, 38, 25]
-
-    # 5. Personal Bests
-    pb_query = select(
-        WorkoutLog.exercise,
-        func.max(WorkoutLog.reps).label("max_reps"),
-        func.max(WorkoutLog.created_at).label("latest_date")
-    ).where(
-        WorkoutLog.user_id == current_user.id
-    ).group_by(WorkoutLog.exercise)
+    # 4. Joint Stress & Recovery (Calculated from recent activity)
+    # Joint Stress is inversely proportional to average posture score
+    stress_value = 100 - int(stats_row.avg_score or 90)
+    stress_level = "Low"
+    if stress_value > 60:
+        stress_level = "High"
+    elif stress_value > 30:
+        stress_level = "Moderate"
     
-    pb_result = await db.execute(pb_query)
-    personal_bests = []
-    for row in pb_result:
-        personal_bests.append({
-            "exercise": row.exercise,
-            "reps": row.max_reps,
-            "date": row.latest_date.strftime("%Y-%m-%d")
-        })
+    # Recovery Rate decreases with total workouts in the last 24h
+    recent_workouts_count = await db.execute(
+        select(func.count(WorkoutLog.id)).where(
+            and_(
+                WorkoutLog.user_id == current_user.id,
+                WorkoutLog.created_at >= now - timedelta(days=1)
+            )
+        )
+    )
+    workouts_today = recent_workouts_count.scalar() or 0
+    recovery_rate = max(10, 100 - (workouts_today * 15))
+
+    # 5. Personal Bests (Normalized exercise names)
+    # We'll use a subquery to normalize names and get max reps
+    # In a real app, we might want a mapping table, but for now we'll lowercase and strip trailing 's'
+    all_workouts_query = select(WorkoutLog).where(WorkoutLog.user_id == current_user.id)
+    all_workouts_res = await db.execute(all_workouts_query)
+    all_workouts = all_workouts_res.scalars().all()
+
+    pb_dict = {}
+    for w in all_workouts:
+        # Normalize: lowercase, strip 's' if it's at the end (simplistic)
+        norm_name = w.exercise.lower().strip()
+        if norm_name.endswith('s') and norm_name not in ['pushups', 'squats']: # Keep these as they are common
+             pass # just for logic flow
+        
+        # Better normalization: handle known plural/singular
+        if norm_name == 'squats': norm_name = 'squat'
+        if norm_name == 'pushups': norm_name = 'pushup'
+        if norm_name == 'lunges': norm_name = 'lunge'
+        
+        # Capitalize for display
+        display_name = norm_name.capitalize()
+        
+        if display_name not in pb_dict or w.reps > pb_dict[display_name]['reps']:
+            pb_dict[display_name] = {
+                "exercise": display_name,
+                "reps": w.reps,
+                "date": w.created_at.strftime("%Y-%m-%d")
+            }
+    
+    personal_bests = sorted(list(pb_dict.values()), key=lambda x: x['reps'], reverse=True)
 
     return {
         "totalWorkouts": stats_row.total_workouts or 0,
@@ -102,7 +133,9 @@ async def get_user_stats(
         "avgScore": int(stats_row.avg_score or 0),
         "caloriesBurned": int(stats_row.calories_burned or 0),
         "fatigueData": fatigue_data,
-        "jointStress": joint_stress,
+        "recoveryRate": recovery_rate,
+        "jointStress": stress_value,
+        "jointStressLevel": stress_level,
         "weeklyWorkouts": weekly_workouts,
         "personalBests": personal_bests
     }

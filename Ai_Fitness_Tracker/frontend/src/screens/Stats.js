@@ -41,7 +41,9 @@ const Stats = () => {
     avgScore: 87,
     caloriesBurned: 8400,
     fatigueData: [85, 88, 82, 90, 87, 84, 89],
-    jointStress: [45, 32, 28, 38, 25],
+    recoveryRate: 85,
+    jointStress: 30,
+    jointStressLevel: 'Low',
     weeklyWorkouts: [3, 5, 4, 6, 5, 4, 7],
     personalBests: [
       { exercise: 'Squats', reps: 50, date: '2026-01-28' },
@@ -138,19 +140,33 @@ const Stats = () => {
             <div>
               <div className="flex justify-between text-xs font-bold mb-2">
                 <span className="text-zinc-500 uppercase">Recovery Rate</span>
-                <span className="text-primary">85%</span>
+                <span className="text-primary">{data.recoveryRate}%</span>
               </div>
               <div className="h-2 bg-zinc-900 rounded-full overflow-hidden">
-                <div className="h-full bg-primary w-[85%] rounded-full" />
+                <div 
+                  className="h-full bg-primary rounded-full transition-all duration-1000" 
+                  style={{ width: `${data.recoveryRate}%` }} 
+                />
               </div>
             </div>
             <div>
               <div className="flex justify-between text-xs font-bold mb-2">
                 <span className="text-zinc-500 uppercase">Joint Stress</span>
-                <span className="text-orange-500">Low</span>
+                <span className={`${
+                  data.jointStressLevel === 'High' ? 'text-red-500' : 
+                  data.jointStressLevel === 'Moderate' ? 'text-orange-500' : 'text-green-500'
+                }`}>
+                  {data.jointStressLevel}
+                </span>
               </div>
               <div className="h-2 bg-zinc-900 rounded-full overflow-hidden">
-                <div className="h-full bg-orange-500 w-[30%] rounded-full" />
+                <div 
+                  className={`h-full rounded-full transition-all duration-1000 ${
+                    data.jointStressLevel === 'High' ? 'bg-red-500' : 
+                    data.jointStressLevel === 'Moderate' ? 'bg-orange-500' : 'bg-green-500'
+                  }`} 
+                  style={{ width: `${data.jointStress}%` }} 
+                />
               </div>
             </div>
           </div>
