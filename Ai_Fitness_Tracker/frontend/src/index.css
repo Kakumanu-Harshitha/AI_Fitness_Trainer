@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background text-white antialiased overflow-x-hidden;
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-card backdrop-blur-md border border-border rounded-[24px];
+  }
+
+  .neon-border {
+    box-shadow: 0 0 15px rgba(180, 255, 57, 0.2);
+  }
+
+  .btn-primary {
+    @apply bg-primary text-black font-bold py-3 px-6 rounded-xl transition-all active:scale-95 hover:opacity-90 disabled:opacity-50 disabled:active:scale-100;
+  }
+
+  .input-field {
+    @apply w-full bg-secondary border border-border text-white px-4 py-3 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all placeholder:text-textSecondary;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #000;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+}

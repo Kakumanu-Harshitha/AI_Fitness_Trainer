@@ -1,0 +1,61 @@
+.venv
+.env
+.env.*
+*.env
+
+# Python cache and artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Databases
+*.db
+*.sqlite3
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.eslintcache
+
+# Logs
+*.log
+backend/request_log.txt
+
+# Local data and cache
+.expo/
+.expo_home/
+.local_appdata/
+.cache/
+.npm/
+
+# Build directories
+build/
+dist/
+.next/
+out/
+frontend/build/
+
+# Unnecessary project folders
+mobile/
+web/
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# IDE specific
+.vscode/
+.idea/
+.trae/
+*.swp
+*.swo
+
+# Large AI models/tasks
+*.task
