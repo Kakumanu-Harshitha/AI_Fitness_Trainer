@@ -15,7 +15,7 @@ const INITIAL_STATS = {
   reps: 0,
   time: 0,
   calories: 0,
-  avgScore: 100,
+  avgScore: 0,
   scores: [],
 };
 
@@ -58,6 +58,10 @@ export const WorkoutProvider = ({ children }) => {
 
       // Update rep count
       const repData = stateMachine.current.update(landmarks);
+      
+      if (repData.repDetected) {
+        console.log('[WorkoutContext] Rep detected!', repData.repCount);
+      }
 
       // Get coach advice
       const advice = coach.current.update(scoreData);
@@ -67,13 +71,20 @@ export const WorkoutProvider = ({ children }) => {
       const newScore = scoreData.total;
       // Only include score if it's non-zero (landmarks detected)
       const newScores = newScore > 0 ? [...prev.scores, newScore] : prev.scores;
-      const currentAvg = newScores.length > 0 
-        ? Math.round(newScores.reduce((a, b) => a + b, 0) / newScores.length)
-        : prev.avgScore;
+      
+      // Calculate running average
+      let currentAvg = prev.avgScore;
+      if (newScores.length > 0) {
+        const totalScore = newScores.reduce((a, b) => a + b, 0);
+        currentAvg = Math.round(totalScore / newScores.length);
+      }
 
+      // Update reps and detect changes
+      const newReps = repData.repCount;
+      
       return {
         ...prev,
-        reps: repData.repCount,
+        reps: newReps,
         avgScore: currentAvg,
         scores: newScores,
       };

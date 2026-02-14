@@ -1,12 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlalchemy import select, or_, and_
+from sqlalchemy import select, or_, and_, update
 from typing import List
+import logging
 
 from ..dependencies import get_db, get_current_user
 from ...db.models import User, Friendship, ChatMessage
 from ...schemas.schemas import LeaderboardUser, FriendResponse, UserResponse, ActivityFeedItem, ChatMessageResponse
+
+logger = logging.getLogger(__name__)
 from ...services.activity_service import ActivityService
 
 router = APIRouter(prefix="/social", tags=["Social & Gamification"])
@@ -383,12 +386,24 @@ async def get_chat_history(
         })
     
     # Mark received messages as read
-    await db.execute(
-        ChatMessage.__table__.update()
-        .where(ChatMessage.sender_id == friend.id, ChatMessage.receiver_id == current_user.id, ChatMessage.is_read == 0)
-        .values(is_read=1)
-    )
-    await db.commit()
+    try:
+        await db.execute(
+            update(ChatMessage)
+            .where(
+                and_(
+                    ChatMessage.sender_id == friend.id,
+                    ChatMessage.receiver_id == current_user.id,
+                    ChatMessage.is_read == 0
+                )
+            )
+            .values(is_read=1)
+        )
+        await db.commit()
+    except Exception as e:
+        logger.error(f"Error updating chat history: {e}")
+        await db.rollback()
+        # We don't necessarily want to fail the whole request if marking as read fails
+        # but it's better than a silent 500
     
     return response_messages
 

@@ -86,15 +86,16 @@ const CameraView = forwardRef(({ type = 'front', onLandmarks, style, children },
             });
 
             // Pass landmarks to parent
-            if (onLandmarks) {
+            if (onLandmarksRef.current) {
               try {
-                const pixelLandmarks = results.poseLandmarks.map(lm => ({
-                  x: lm.x * videoWidth,
-                  y: lm.y * videoHeight,
+                // Pass normalized landmarks (0-1) as expected by the AI engines
+                const normalizedLandmarks = results.poseLandmarks.map(lm => ({
+                  x: lm.x,
+                  y: lm.y,
                   z: lm.z,
-                  score: lm.visibility || 1.0
+                  score: lm.visibility !== undefined ? lm.visibility : 1.0
                 }));
-                onLandmarks(pixelLandmarks);
+                onLandmarksRef.current(normalizedLandmarks);
               } catch (e) {
                 console.warn('[CameraView] Error in onLandmarks callback:', e);
               }

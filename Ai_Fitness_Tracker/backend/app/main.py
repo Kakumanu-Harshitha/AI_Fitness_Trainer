@@ -97,7 +97,10 @@ app.include_router(voice_router, prefix=settings.API_V1_STR)
 app.include_router(ws_router, prefix=settings.API_V1_STR)
 app.include_router(water_router, prefix=settings.API_V1_STR)
 
-# CORS configuration
+# Add RateLimitMiddleware
+app.add_middleware(RateLimitMiddleware, redis_service=redis_service, limit=100, window=60)
+
+# CORS configuration (Added LAST so it wraps everything else and runs FIRST for requests)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -105,14 +108,13 @@ app.add_middleware(
         "http://127.0.0.1:3000",
         "http://localhost:8001",
         "http://127.0.0.1:8001",
+        "http://localhost:8080",
+        "http://127.0.0.1:8080",
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Add RateLimitMiddleware (Moved AFTER CORS)
-app.add_middleware(RateLimitMiddleware, redis_service=redis_service, limit=100, window=60)
 
 @app.get("/")
 def root():

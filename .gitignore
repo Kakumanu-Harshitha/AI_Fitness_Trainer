@@ -28,13 +28,6 @@ yarn-error.log*
 *.log
 backend/request_log.txt
 
-# Local data and cache
-.expo/
-.expo_home/
-.local_appdata/
-.cache/
-.npm/
-
 # Build directories
 build/
 dist/
@@ -55,3 +48,12 @@ Thumbs.db
 
 # Large AI models/tasks
 *.task
+
+# Project specific
+mobile/
+web/
+.expo/
+.expo_home/
+.local_appdata/
+.cache/
+.npm/

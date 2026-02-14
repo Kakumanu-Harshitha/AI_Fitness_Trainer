@@ -120,7 +120,7 @@ export class ExerciseStateMachine {
       angles: [],
       maxHistory: 5
     };
-    this.confidenceThreshold = 0.5;
+    this.confidenceThreshold = 0.3; // Lowered from 0.5 for better detection in varying light
   }
 
   reset(exerciseName) {
@@ -136,20 +136,32 @@ export class ExerciseStateMachine {
   getThresholds(exercise) {
     const thresholds = {
       squat: { 
-        downAngle: 100, 
-        upAngle: 160, 
+        downAngle: 110, // Relaxed from 100 for better detection
+        upAngle: 150,   // Relaxed from 160 for better detection
         type: 'rep',
         joints: [23, 25, 27, 24, 26, 28] // Hips, Knees, Ankles
       },
-      pushup: { 
-        downAngle: 90, 
+      squats: { 
+        downAngle: 110, 
         upAngle: 150, 
+        type: 'rep',
+        joints: [23, 25, 27, 24, 26, 28]
+      },
+      pushup: { 
+        downAngle: 100, // Relaxed from 90
+        upAngle: 140,   // Relaxed from 150
         type: 'rep',
         joints: [11, 13, 15, 12, 14, 16] // Shoulders, Elbows, Wrists
       },
-      lunge: { 
+      pushups: { 
         downAngle: 100, 
-        upAngle: 160, 
+        upAngle: 140, 
+        type: 'rep',
+        joints: [11, 13, 15, 12, 14, 16]
+      },
+      lunge: { 
+        downAngle: 110, 
+        upAngle: 150, 
         type: 'rep',
         joints: [23, 25, 27, 24, 26, 28]
       },
@@ -174,10 +186,17 @@ export class ExerciseStateMachine {
 
     // Check confidence/visibility
     const requiredJoints = this.thresholds.joints || [];
-    const lowConfidence = requiredJoints.some(idx => landmarks[idx]?.score < this.confidenceThreshold);
-    if (lowConfidence) {
+    const lowConfidenceJoints = requiredJoints.filter(idx => (landmarks[idx]?.score || 0) < this.confidenceThreshold);
+    
+    if (lowConfidenceJoints.length > 0) {
       if (this.thresholds.type === 'time') this.holdStartTime = null; // Reset timer on poor visibility
-      return { repCount: this.repCount, phase: this.phase, repDetected: false, isValid: false, message: 'Adjust camera - joints not visible' };
+      return { 
+        repCount: this.repCount, 
+        phase: this.phase, 
+        repDetected: false, 
+        isValid: false, 
+        message: `Adjust camera - joints low confidence: ${lowConfidenceJoints.join(', ')}` 
+      };
     }
 
     if (this.thresholds.type === 'rep') {
@@ -191,11 +210,15 @@ export class ExerciseStateMachine {
     let repDetected = false;
     let angle = 0;
 
-    if (this.exerciseName === 'squat' || this.exerciseName === 'lunge') {
+    if (this.exerciseName === 'squat' || this.exerciseName === 'lunge' || this.exerciseName === 'squats') {
       const leftAngle = this.calculateAngle(landmarks[23], landmarks[25], landmarks[27]);
       const rightAngle = this.calculateAngle(landmarks[24], landmarks[26], landmarks[28]);
       angle = Math.min(leftAngle, rightAngle);
-    } else if (this.exerciseName === 'pushup') {
+      // Log for debugging
+      if (this.repCount === 0 && this.phase === 'START' && Math.random() > 0.99) {
+          console.log(`[Exercise] ${this.exerciseName} detection: left=${Math.round(leftAngle)}, right=${Math.round(rightAngle)}`);
+      }
+    } else if (this.exerciseName === 'pushup' || this.exerciseName === 'pushups') {
       const leftAngle = this.calculateAngle(landmarks[11], landmarks[13], landmarks[15]);
       const rightAngle = this.calculateAngle(landmarks[12], landmarks[14], landmarks[16]);
       angle = Math.min(leftAngle, rightAngle);
@@ -211,12 +234,16 @@ export class ExerciseStateMachine {
     if (this.history.angles.length > this.history.maxHistory) this.history.angles.shift();
     const smoothAngle = this.history.angles.reduce((a, b) => a + b, 0) / this.history.angles.length;
 
+    if (Math.abs(smoothAngle - angle) > 5) {
+        // console.log(`[Exercise] ${this.exerciseName} angle: ${Math.round(angle)}, smooth: ${Math.round(smoothAngle)}`);
+    }
+
     // State Machine: START -> DOWN -> UP -> +1
     // START: Standing/Initial position
     // DOWN: Reached target depth
     // UP: Returned to start position
 
-    if (this.phase === 'START' && smoothAngle > this.thresholds.upAngle - 10) {
+    if (this.phase === 'START' && smoothAngle > this.thresholds.upAngle) {
       // Valid start position
       this.isFormValid = true;
     }
@@ -224,14 +251,14 @@ export class ExerciseStateMachine {
     if (smoothAngle < this.thresholds.downAngle) {
       if (this.phase === 'START') {
         this.phase = 'DOWN';
-        console.log(`[Exercise] ${this.exerciseName} phase: DOWN`);
+        console.log(`[Exercise] ${this.exerciseName} phase: DOWN (angle: ${Math.round(smoothAngle)})`);
       }
     } else if (smoothAngle > this.thresholds.upAngle) {
       if (this.phase === 'DOWN') {
         this.repCount++;
         this.phase = 'START';
         repDetected = true;
-        console.log(`[Exercise] ${this.exerciseName} phase: UP (+1 rep: ${this.repCount})`);
+        console.log(`[Exercise] ${this.exerciseName} phase: UP (+1 rep: ${this.repCount}, angle: ${Math.round(smoothAngle)})`);
       }
     }
 
