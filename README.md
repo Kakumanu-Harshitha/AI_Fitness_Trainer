@@ -182,11 +182,12 @@ The frontend communicates with the backend via a centralized `useApi` hook:
 
 ## 📸 Screenshots
 
-![Dashboard Placeholder](https://via.placeholder.com/800x450?text=App+Dashboard)
-*Home Dashboard with weekly activity and stats.*
+> **Note**: To display your own screenshots here, add your images to a folder named `screenshots/` and update the paths below.
 
-![Workout Placeholder](https://via.placeholder.com/800x450?text=Live+Workout+Detection)
-*Real-time Squat detection with skeletal overlay.*
+| Home Dashboard | Live Workout Detection |
+| :---: | :---: |
+| ![Dashboard](https://placehold.co/800x450/252525/FFFFFF?text=Dashboard+Overview) | ![Workout](https://placehold.co/800x450/252525/FFFFFF?text=Real-time+Pose+Tracking) |
+| *Weekly activity and fitness stats.* | *AI-powered rep counting.* |
 
 ---
 
