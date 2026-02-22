@@ -59,7 +59,42 @@ class UserRepository:
             user.height_cm = data.height_cm
         if data.weight_kg is not None:
             user.weight_kg = data.weight_kg
+        if data.body_type is not None:
+            user.body_type = data.body_type
+        if data.diet_goal is not None:
+            user.diet_goal = data.diet_goal
+        if data.activity_level is not None:
+            user.activity_level = data.activity_level
+        if data.daily_sleep_goal is not None:
+            user.daily_sleep_goal = data.daily_sleep_goal
+        if data.daily_water_goal is not None:
+            user.daily_water_goal = data.daily_water_goal
+        if data.injuries is not None:
+            user.injuries = data.injuries
+        if data.dietary_preferences is not None:
+            user.dietary_preferences = data.dietary_preferences
         
+        self.db.add(user)
+        await self.db.commit()
+        await self.db.refresh(user)
+        return user
+
+    async def update_password(self, user: User, hashed_password: str) -> User:
+        user.password = hashed_password
+        self.db.add(user)
+        await self.db.commit()
+        await self.db.refresh(user)
+        return user
+
+    async def update_totp_secret(self, user: User, secret: str) -> User:
+        user.totp_secret = secret
+        self.db.add(user)
+        await self.db.commit()
+        await self.db.refresh(user)
+        return user
+
+    async def enable_totp(self, user: User, enabled: bool = True) -> User:
+        user.is_totp_enabled = 1 if enabled else 0
         self.db.add(user)
         await self.db.commit()
         await self.db.refresh(user)

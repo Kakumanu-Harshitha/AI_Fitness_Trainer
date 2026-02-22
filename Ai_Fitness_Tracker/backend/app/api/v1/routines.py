@@ -21,7 +21,8 @@ async def create_routine(
         name=routine_data.name,
         description=routine_data.description,
         complexity=routine_data.complexity,
-        vision_complexity=routine_data.vision_complexity
+        vision_complexity=routine_data.vision_complexity,
+        type=routine_data.type
     )
     db.add(new_routine)
     await db.flush()  # Get routine ID

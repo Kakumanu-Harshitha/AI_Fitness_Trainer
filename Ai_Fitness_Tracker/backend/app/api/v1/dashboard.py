@@ -7,6 +7,7 @@ from typing import List
 from ..dependencies import get_db, get_current_user
 from ...db.models import User, WorkoutLog, WaterLog
 from ...schemas.schemas import DashboardResponse, AIPulseResponse
+from ...core_ai.coach.lifestyle_bot import generate_diet_plan
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
@@ -109,11 +110,30 @@ async def get_dashboard_home(
         "goal": 2500 # Default goal
     }
 
+    # 5. Generate Diet Plan (Real-time based on context)
+    user_context = {
+        "username": current_user.username,
+        "age": getattr(current_user, "age", None),
+        "height_cm": getattr(current_user, "height_cm", None),
+        "weight_kg": getattr(current_user, "weight_kg", None),
+        "body_type": getattr(current_user, "body_type", None),
+        "activity_level": getattr(current_user, "activity_level", None),
+        "diet_goal": getattr(current_user, "diet_goal", None),
+        "dietary_preferences": getattr(current_user, "dietary_preferences", None),
+        "injuries": getattr(current_user, "injuries", None),
+        "daily_sleep_goal": getattr(current_user, "daily_sleep_goal", None),
+        "daily_water_goal": getattr(current_user, "daily_water_goal", None)
+    }
+    
+    # Use existing stats_summary
+    diet_plan_data = await generate_diet_plan(user_context, stats_summary)
+
     return DashboardResponse(
         greeting=f"Hello, {current_user.username}!",
         streak=current_user.streak,
         weekly_progress=weekly_progress,
         ai_pulse=ai_pulse,
         stats_summary=stats_summary,
-        water_intake=water_intake
+        water_intake=water_intake,
+        diet_plan=diet_plan_data
     )

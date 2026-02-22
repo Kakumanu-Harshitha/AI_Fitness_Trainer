@@ -29,7 +29,8 @@ const Workouts = () => {
   const [complexity, setComplexity] = useState('BALANCED');
   const [visionComplexity, setVisionComplexity] = useState('NORMAL');
   const [isSaving, setIsSaving] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('fitness'); // 'fitness' or 'mindfulness'
 
   const visionComplexityLevels = [
     { id: 'BASIC', name: 'Basic', description: 'Pose detection only', color: '#94a3b8' },
@@ -52,6 +53,12 @@ const Workouts = () => {
     { id: 6, name: 'Mountain Climbers', reps: 20, duration: 45, icon: '⛰️' },
     { id: 7, name: 'Jumping Jacks', reps: 30, duration: 30, icon: '🤸' },
     { id: 8, name: 'Sit-ups', reps: 15, duration: 40, icon: '🎯' },
+  ];
+
+  const mindfulnessExercises = [
+    { id: 'm1', name: 'Warrior II', type: 'yoga', duration: 300, icon: '🧘‍♀️', description: 'Strengthen legs and open hips' },
+    { id: 'm2', name: 'Tree Pose', type: 'yoga', duration: 180, icon: '🌲', description: 'Improve balance and focus' },
+    { id: 'm3', name: 'Breath Focus', type: 'meditation', duration: 300, icon: '🌬️', description: 'Calm mind and regulate breath' },
   ];
 
   useEffect(() => {
@@ -229,33 +236,101 @@ const Workouts = () => {
     return 0;
   };
 
+  const handleStartMindfulness = (exercise) => {
+    navigate('/live-workout', {
+      state: {
+        routine: {
+          id: `mind-${exercise.id}`,
+          name: exercise.name,
+          exercises: [exercise],
+          type: 'mindfulness'
+        }
+      }
+    });
+  };
+
   return (
-    <div className="min-h-screen bg-black text-white p-6 pb-24 max-w-2xl mx-auto">
+    <div className="min-h-screen bg-gray-50 dark:bg-black text-gray-900 dark:text-white p-6 pb-24 max-w-2xl mx-auto transition-colors duration-300">
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-black">Workout Builder</h1>
+        <div>
+          <h1 className="text-3xl font-black">Workouts</h1>
+          <p className="text-gray-500 dark:text-zinc-400 text-sm">Choose your training path</p>
+        </div>
         <button 
           onClick={handleCreateRoutine}
           className="bg-primary text-black px-4 py-2 rounded-xl font-bold flex items-center gap-2 hover:scale-105 transition-transform active:scale-95"
         >
           <Plus size={20} />
-          <span>Create</span>
+          <span>New Routine</span>
         </button>
       </div>
 
-      {/* Quick Start Templates */}
-      <div className="mb-8">
-        <h2 className="text-sm font-extrabold text-zinc-500 uppercase tracking-widest mb-4">Quick Start</h2>
+      {/* Mode Switcher */}
+      <div className="flex p-1 bg-gray-200 dark:bg-zinc-900/50 rounded-xl mb-8 w-fit transition-colors">
+        <button
+          onClick={() => setActiveTab('fitness')}
+          className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${
+            activeTab === 'fitness' 
+              ? 'bg-[#B4FF39] text-black shadow-lg shadow-[#B4FF39]/20' 
+              : 'text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white'
+          }`}
+        >
+          Fitness
+        </button>
+        <button
+          onClick={() => setActiveTab('mindfulness')}
+          className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${
+            activeTab === 'mindfulness' 
+              ? 'bg-[#B4FF39] text-black shadow-lg shadow-[#B4FF39]/20' 
+              : 'text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white'
+          }`}
+        >
+          Yoga & Mind
+        </button>
+      </div>
+
+      {activeTab === 'mindfulness' ? (
+        <div className="grid grid-cols-1 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {mindfulnessExercises.map((exercise) => (
+            <GlassCard key={exercise.id} className="p-6 relative group overflow-hidden">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-[#B4FF39]/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-[#B4FF39]/10 transition-colors" />
+               
+               <div className="flex justify-between items-start mb-4">
+                 <div className="w-12 h-12 bg-gray-100 dark:bg-zinc-800 rounded-xl flex items-center justify-center text-2xl transition-colors">
+                   {exercise.icon}
+                 </div>
+                 <span className="px-3 py-1 bg-gray-100 dark:bg-zinc-800 rounded-full text-xs text-gray-500 dark:text-zinc-400 transition-colors">
+                   {Math.floor(exercise.duration / 60)} min
+                 </span>
+               </div>
+
+               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{exercise.name}</h3>
+               <p className="text-sm text-gray-500 dark:text-zinc-400 mb-6">{exercise.description}</p>
+
+               <GradientButton 
+                 onPress={() => handleStartMindfulness(exercise)}
+                 className="w-full"
+                 title="Start Session"
+               />
+            </GlassCard>
+          ))}
+        </div>
+      ) : (
+        <>
+          {/* Quick Start Templates */}
+          <div className="mb-8">
+        <h2 className="text-sm font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest mb-4">Quick Start</h2>
         <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
           {['Full Body', 'Upper Body', 'Lower Body', 'Core Focus'].map((template, index) => (
             <button 
               key={index} 
               onClick={() => handleLoadTemplate(template)}
-              className="min-w-[140px] bg-zinc-900/50 border border-zinc-800 p-4 rounded-2xl flex flex-col items-center gap-2 hover:border-primary/50 transition-colors"
+              className="min-w-[140px] bg-gray-200 dark:bg-zinc-900/50 border border-gray-300 dark:border-zinc-800 p-4 rounded-2xl flex flex-col items-center gap-2 hover:border-primary/50 transition-colors"
             >
               <Zap size={24} className="text-primary" />
-              <span className="font-bold whitespace-nowrap">{template}</span>
-              <span className="text-[10px] text-zinc-500">15 min</span>
+              <span className="font-bold whitespace-nowrap text-gray-900 dark:text-white">{template}</span>
+              <span className="text-[10px] text-gray-500 dark:text-zinc-500">15 min</span>
             </button>
           ))}
         </div>
@@ -263,16 +338,16 @@ const Workouts = () => {
 
       {/* My Routines */}
       <div>
-        <h2 className="text-sm font-extrabold text-zinc-500 uppercase tracking-widest mb-4">My Routines</h2>
+        <h2 className="text-sm font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest mb-4">My Routines</h2>
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : routines.length === 0 ? (
           <GlassCard className="flex flex-col items-center justify-center py-12 text-center">
-            <Dumbbell size={48} className="text-zinc-700 mb-4" />
-            <p className="font-bold text-zinc-400">No routines yet</p>
-            <p className="text-sm text-zinc-600">Create your first workout routine</p>
+            <Dumbbell size={48} className="text-gray-400 dark:text-zinc-700 mb-4" />
+            <p className="font-bold text-gray-500 dark:text-zinc-400">No routines yet</p>
+            <p className="text-sm text-gray-400 dark:text-zinc-600">Create your first workout routine</p>
           </GlassCard>
         ) : (
           <div className="space-y-4">
@@ -283,8 +358,8 @@ const Workouts = () => {
                     <Dumbbell size={20} className="text-primary" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-bold">{routine.name}</h3>
-                    <p className="text-xs text-zinc-500">
+                    <h3 className="font-bold text-gray-900 dark:text-white">{routine.name}</h3>
+                    <p className="text-xs text-gray-500 dark:text-zinc-500">
                       {(routine.exercises?.length || routine.steps?.length || 0)} exercises • {Math.floor(calculateTotalDuration(routine) / 60)} min
                     </p>
                   </div>
@@ -306,27 +381,29 @@ const Workouts = () => {
           </div>
         )}
       </div>
+      </>
+      )}
 
       {/* Create Routine Modal */}
       {showRoutineModal && (
         <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-0 sm:p-4">
-          <div className="bg-zinc-950 w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-t-[32px] sm:rounded-[32px] border border-zinc-800 flex flex-col animate-in slide-in-from-bottom duration-300">
+          <div className="bg-white dark:bg-zinc-950 w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-t-[32px] sm:rounded-[32px] border border-gray-200 dark:border-zinc-800 flex flex-col animate-in slide-in-from-bottom duration-300 transition-colors">
             {/* Modal Header */}
-            <div className="p-6 border-b border-zinc-900 flex justify-between items-center">
-              <h2 className="text-xl font-black">Create Routine</h2>
-              <button onClick={() => setShowRoutineModal(false)} className="p-2 hover:bg-zinc-900 rounded-full transition-colors">
-                <X size={24} className="text-zinc-400" />
+            <div className="p-6 border-b border-gray-200 dark:border-zinc-900 flex justify-between items-center transition-colors">
+              <h2 className="text-xl font-black text-gray-900 dark:text-white">Create Routine</h2>
+              <button onClick={() => setShowRoutineModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-900 rounded-full transition-colors">
+                <X size={24} className="text-gray-500 dark:text-zinc-400" />
               </button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-8">
               {/* Routine Name */}
               <div className="space-y-2">
-                <label className="text-xs font-extrabold text-zinc-500 uppercase tracking-widest">Routine Name</label>
+                <label className="text-xs font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Routine Name</label>
                 <input
                   type="text"
                   placeholder="e.g., Morning Burn"
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-white focus:outline-none focus:border-primary transition-colors"
+                  className="w-full bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl p-4 text-gray-900 dark:text-white focus:outline-none focus:border-primary transition-colors"
                   value={routineName}
                   onChange={(e) => setRoutineName(e.target.value)}
                 />
@@ -334,7 +411,7 @@ const Workouts = () => {
 
               {/* Intensity Level */}
               <div className="space-y-4">
-                <label className="text-xs font-extrabold text-zinc-500 uppercase tracking-widest">Workout Intensity</label>
+                <label className="text-xs font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Workout Intensity</label>
                 <div className="grid grid-cols-3 gap-3">
                   {complexityLevels.map((level) => (
                     <button
@@ -343,7 +420,7 @@ const Workouts = () => {
                       className={`py-3 rounded-xl border font-bold transition-all ${
                         complexity === level.id 
                           ? 'border-primary bg-primary/10 text-primary' 
-                          : 'border-zinc-800 bg-zinc-900 text-zinc-500'
+                          : 'border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900 text-gray-500 dark:text-zinc-500'
                       }`}
                     >
                       {level.name}
@@ -355,8 +432,8 @@ const Workouts = () => {
               {/* AI Vision Complexity */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
-                  <Eye size={16} className="text-zinc-500" />
-                  <label className="text-xs font-extrabold text-zinc-500 uppercase tracking-widest">AI Vision Analysis</label>
+                  <Eye size={16} className="text-gray-500 dark:text-zinc-500" />
+                  <label className="text-xs font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">AI Vision Analysis</label>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {visionComplexityLevels.map((level) => (
@@ -366,13 +443,13 @@ const Workouts = () => {
                       className={`p-3 rounded-xl border text-left transition-all ${
                         visionComplexity === level.id 
                           ? 'border-primary bg-primary/10' 
-                          : 'border-zinc-800 bg-zinc-900'
+                          : 'border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-900'
                       }`}
                     >
-                      <p className={`text-xs font-black uppercase mb-1 ${visionComplexity === level.id ? 'text-primary' : 'text-zinc-400'}`}>
+                      <p className={`text-xs font-black uppercase mb-1 ${visionComplexity === level.id ? 'text-primary' : 'text-gray-400 dark:text-zinc-400'}`}>
                         {level.name}
                       </p>
-                      <p className="text-[10px] text-zinc-500 leading-tight">{level.description}</p>
+                      <p className="text-[10px] text-gray-500 dark:text-zinc-500 leading-tight">{level.description}</p>
                     </button>
                   ))}
                 </div>
@@ -381,7 +458,7 @@ const Workouts = () => {
               {/* Workout Sequence */}
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <label className="text-xs font-extrabold text-zinc-500 uppercase tracking-widest">
+                  <label className="text-xs font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">
                     Sequence ({selectedExercises.length})
                   </label>
                   <button 
@@ -395,27 +472,27 @@ const Workouts = () => {
 
                 <div className="space-y-2">
                   {selectedExercises.map((exercise, index) => (
-                    <div key={exercise.uniqueId} className="bg-zinc-900 border border-zinc-800 rounded-xl p-3 flex items-center gap-3">
+                    <div key={exercise.uniqueId} className="bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl p-3 flex items-center gap-3 transition-colors">
                       <div className="flex flex-col gap-1">
                         <button 
                           disabled={index === 0}
                           onClick={() => moveExercise(index, -1)}
-                          className="text-zinc-600 disabled:opacity-30"
+                          className="text-gray-400 dark:text-zinc-600 disabled:opacity-30 hover:text-gray-900 dark:hover:text-white transition-colors"
                         >
                           <ChevronUp size={16} />
                         </button>
                         <button 
                           disabled={index === selectedExercises.length - 1}
                           onClick={() => moveExercise(index, 1)}
-                          className="text-zinc-600 disabled:opacity-30"
+                          className="text-gray-400 dark:text-zinc-600 disabled:opacity-30 hover:text-gray-900 dark:hover:text-white transition-colors"
                         >
                           <ChevronDown size={16} />
                         </button>
                       </div>
                       <span className="text-xl">{exercise.icon}</span>
                       <div className="flex-1">
-                        <p className="font-bold text-sm">{exercise.name}</p>
-                        <p className="text-[10px] text-zinc-500 uppercase font-black">{exercise.duration}s</p>
+                        <p className="font-bold text-sm text-gray-900 dark:text-white">{exercise.name}</p>
+                        <p className="text-[10px] text-gray-500 dark:text-zinc-500 uppercase font-black">{exercise.duration}s</p>
                       </div>
                       <div className="flex items-center gap-2">
                         <button 

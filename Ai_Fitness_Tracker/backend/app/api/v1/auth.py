@@ -6,9 +6,10 @@ from urllib.parse import urlencode
 import time
 import httpx
 from jose import jwt, jwk
-from ...schemas.schemas import UserRegister, UserLogin, UserResponse, TokenResponse
-from ..dependencies import get_db
+from ...schemas.schemas import UserRegister, UserLogin, UserResponse, TokenResponse, ForgotPasswordRequest, ResetPasswordRequest, TOTPSetupResponse, TOTPVerifyRequest, ChangePasswordRequest
+from ..dependencies import get_db, get_current_user
 from ...services.auth_service import AuthService
+from ...db.models import User
 from ...core.config import settings
 from ...core.security import create_access_token
 from ...db.repositories.user_repo import UserRepository
@@ -32,6 +33,36 @@ async def signup(user: UserRegister, db: AsyncSession = Depends(get_db)):
 async def login(user: UserLogin, db: AsyncSession = Depends(get_db)):
     auth_service = AuthService(db)
     return await auth_service.authenticate_user(user.username, user.password)
+
+
+@router.post("/forgot-password")
+async def forgot_password(request: ForgotPasswordRequest, db: AsyncSession = Depends(get_db)):
+    auth_service = AuthService(db)
+    return await auth_service.forgot_password(request.email)
+
+
+@router.post("/reset-password")
+async def reset_password(request: ResetPasswordRequest, db: AsyncSession = Depends(get_db)):
+    auth_service = AuthService(db)
+    return await auth_service.reset_password(request.token, request.new_password)
+
+
+@router.post("/totp/setup", response_model=TOTPSetupResponse)
+async def setup_totp(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    auth_service = AuthService(db)
+    return await auth_service.setup_totp(current_user)
+
+
+@router.post("/totp/verify")
+async def verify_totp(request: TOTPVerifyRequest, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    auth_service = AuthService(db)
+    return await auth_service.verify_totp(current_user, request.otp)
+
+
+@router.post("/change-password")
+async def change_password(request: ChangePasswordRequest, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    auth_service = AuthService(db)
+    return await auth_service.change_password_with_totp(current_user, request.new_password, request.totp_code)
 
 
 def _get_base_web_url() -> str:

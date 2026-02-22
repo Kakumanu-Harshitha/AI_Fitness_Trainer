@@ -21,6 +21,21 @@ class User(Base):
     height_cm = Column(Float, nullable=True)
     weight_kg = Column(Float, nullable=True)
 
+    # Lifestyle & Goals
+    body_type = Column(String, nullable=True) # Ectomorph, Mesomorph, Endomorph
+    diet_goal = Column(String, nullable=True) # Lose Weight, Build Muscle, Maintain
+    activity_level = Column(String, nullable=True) # Sedentary, Light, Moderate, Active, Very Active
+    daily_sleep_goal = Column(Float, default=8.0)
+    daily_water_goal = Column(Integer, default=2000)
+    
+    # Extended Assessment
+    injuries = Column(String, nullable=True) # Comma-separated list or JSON string
+    dietary_preferences = Column(String, nullable=True) # Vegan, Keto, Paleo, etc.
+
+    # TOTP / MFA
+    totp_secret = Column(String, nullable=True)
+    is_totp_enabled = Column(Integer, default=0) # Using Integer as Boolean (0=False, 1=True) for SQLite compatibility if needed, or just Boolean
+
     created_at = Column(DateTime, default=datetime.utcnow)
 
     workouts = relationship("WorkoutLog", back_populates="user", cascade="all, delete")
@@ -64,6 +79,7 @@ class Routine(Base):
     description = Column(String, nullable=True)
     complexity = Column(String, default="BALANCED") # LITE, BALANCED, HEAVY
     vision_complexity = Column(String, default="NORMAL") # BASIC, NORMAL, ADVANCED
+    type = Column(String, default="fitness") # fitness, mindfulness
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="routines")

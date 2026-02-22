@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     REDIS_PASSWORD: Optional[str] = None
     REDIS_DB: int = 0
     GROQ_API_KEY: Optional[str] = None
-    WEB_BASE_URL: str = "http://localhost:8080"
+    WEB_BASE_URL: str = "http://localhost:3000"
     GOOGLE_CLIENT_ID: Optional[str] = None
     GOOGLE_CLIENT_SECRET: Optional[str] = None
     GOOGLE_REDIRECT_URI: Optional[str] = None
@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     APPLE_KEY_ID: Optional[str] = None
     APPLE_PRIVATE_KEY: Optional[str] = None
     APPLE_REDIRECT_URI: Optional[str] = None
+
+    # Email Settings
+    GMAIL_SENDER_EMAIL: Optional[str] = "honey2006597@gmail.com"
+    GMAIL_APP_PASSWORD: Optional[str] = "jdnsrqietzdmthiu"
+    RESET_PASSWORD_TOKEN_EXPIRE_HOURS: int = 1
 
     def get_database_url(self, is_async: bool = False) -> str:
         if self.DATABASE_URL:

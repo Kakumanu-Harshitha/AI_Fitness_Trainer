@@ -12,7 +12,7 @@ const BottomNav = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-zinc-950/80 backdrop-blur-lg border-t border-zinc-900 px-4 py-3 z-50">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-lg border-t border-zinc-200 dark:border-zinc-900 px-4 py-3 z-50 transition-colors duration-300">
       <div className="max-w-2xl mx-auto flex justify-between items-center">
         {navItems.map((item) => (
           <NavLink

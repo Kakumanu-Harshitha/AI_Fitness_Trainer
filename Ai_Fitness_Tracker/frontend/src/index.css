@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    @apply bg-background text-white antialiased overflow-x-hidden;
+    @apply bg-gray-50 dark:bg-black text-gray-900 dark:text-white antialiased overflow-x-hidden transition-colors duration-300;
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
       'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
@@ -14,7 +14,7 @@
 
 @layer components {
   .glass-card {
-    @apply bg-card backdrop-blur-md border border-border rounded-[24px];
+    @apply bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border border-zinc-200 dark:border-zinc-800 rounded-[24px];
   }
 
   .neon-border {

@@ -5,7 +5,6 @@ const ProgressRing = ({
   size = 100,
   strokeWidth = 8,
   color = '#B4FF39',
-  backgroundColor = 'rgba(255, 255, 255, 0.1)',
   children
 }) => {
   const radius = (size - strokeWidth) / 2;
@@ -20,7 +19,7 @@ const ProgressRing = ({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke={backgroundColor}
+          className="stroke-zinc-200 dark:stroke-zinc-800 transition-colors duration-300"
           strokeWidth={strokeWidth}
           fill="none"
         />

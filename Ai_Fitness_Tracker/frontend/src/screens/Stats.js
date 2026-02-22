@@ -54,7 +54,7 @@ const Stats = () => {
   const data = statsData || getMockStats();
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 pb-24 max-w-2xl mx-auto overflow-y-auto">
+    <div className="min-h-screen bg-gray-50 dark:bg-black text-gray-900 dark:text-white p-6 pb-24 max-w-2xl mx-auto overflow-y-auto transition-colors duration-300">
       {/* Header */}
       <div className="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <h1 className="text-3xl font-black mb-6">Your Stats</h1>
@@ -66,7 +66,7 @@ const Stats = () => {
               className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
                 timeRange === range 
                   ? 'bg-primary text-black scale-105' 
-                  : 'bg-zinc-900/50 text-zinc-500 hover:bg-zinc-900'
+                  : 'bg-gray-200 dark:bg-zinc-900/50 text-gray-500 dark:text-zinc-500 hover:bg-gray-300 dark:hover:bg-zinc-900'
               }`}
             >
               {range.charAt(0).toUpperCase() + range.slice(1)}
@@ -88,7 +88,7 @@ const Stats = () => {
               <stat.icon size={20} />
             </div>
             <p className="text-2xl font-black">{stat.value}</p>
-            <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">{stat.label}</p>
+            <p className="text-xs font-bold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">{stat.label}</p>
           </GlassCard>
         ))}
       </div>
@@ -105,7 +105,7 @@ const Stats = () => {
                   className="w-full bg-primary rounded-t-lg transition-all duration-1000"
                   style={{ height: `${(count / 7) * 100}%`, minHeight: '4px' }}
                 />
-                <span className="text-[10px] font-bold text-zinc-500">{['M', 'T', 'W', 'T', 'F', 'S', 'S'][index]}</span>
+                <span className="text-[10px] font-bold text-gray-500 dark:text-zinc-500">{['M', 'T', 'W', 'T', 'F', 'S', 'S'][index]}</span>
               </div>
             ))}
           </div>
@@ -119,10 +119,10 @@ const Stats = () => {
           </div>
           <div className="space-y-4">
             {data.personalBests.map((best, index) => (
-              <div key={index} className="flex items-center justify-between py-3 border-b border-zinc-900 last:border-0">
+              <div key={index} className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-zinc-900 last:border-0">
                 <div>
                   <p className="font-bold">{best.exercise}</p>
-                  <p className="text-xs text-zinc-500">{best.date}</p>
+                  <p className="text-xs text-gray-500 dark:text-zinc-500">{best.date}</p>
                 </div>
                 <p className="text-xl font-black text-primary">{best.reps} reps</p>
               </div>
@@ -139,10 +139,10 @@ const Stats = () => {
           <div className="space-y-4">
             <div>
               <div className="flex justify-between text-xs font-bold mb-2">
-                <span className="text-zinc-500 uppercase">Recovery Rate</span>
+                <span className="text-gray-500 dark:text-zinc-500 uppercase">Recovery Rate</span>
                 <span className="text-primary">{data.recoveryRate}%</span>
               </div>
-              <div className="h-2 bg-zinc-900 rounded-full overflow-hidden">
+              <div className="h-2 bg-gray-200 dark:bg-zinc-900 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-primary rounded-full transition-all duration-1000" 
                   style={{ width: `${data.recoveryRate}%` }} 
@@ -151,7 +151,7 @@ const Stats = () => {
             </div>
             <div>
               <div className="flex justify-between text-xs font-bold mb-2">
-                <span className="text-zinc-500 uppercase">Joint Stress</span>
+                <span className="text-gray-500 dark:text-zinc-500 uppercase">Joint Stress</span>
                 <span className={`${
                   data.jointStressLevel === 'High' ? 'text-red-500' : 
                   data.jointStressLevel === 'Moderate' ? 'text-orange-500' : 'text-green-500'
@@ -159,7 +159,7 @@ const Stats = () => {
                   {data.jointStressLevel}
                 </span>
               </div>
-              <div className="h-2 bg-zinc-900 rounded-full overflow-hidden">
+              <div className="h-2 bg-gray-200 dark:bg-zinc-900 rounded-full overflow-hidden">
                 <div 
                   className={`h-full rounded-full transition-all duration-1000 ${
                     data.jointStressLevel === 'High' ? 'bg-red-500' : 

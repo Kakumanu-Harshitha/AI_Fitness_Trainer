@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { useApi } from '../hooks/useApi';
-import { WS_URL } from '../utils/api';
+import { WS_URL, API_BASE_URL } from '../utils/api';
 import GlassCard from '../components/GlassCard';
 
 const Chat = () => {
@@ -159,22 +159,34 @@ const Chat = () => {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-120px)] max-w-4xl mx-auto">
+    <div className="flex flex-col h-[calc(100vh-120px)] max-w-4xl mx-auto text-gray-900 dark:text-white transition-colors duration-300">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <button 
           onClick={() => navigate(-1)}
-          className="p-2 hover:bg-white/10 rounded-full transition-colors"
+          className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors text-gray-500 dark:text-zinc-400"
         >
           <ArrowLeft size={24} />
         </button>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-xl">
-            {friend?.profile_image || '👤'}
+          <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-zinc-800 flex items-center justify-center text-xl overflow-hidden">
+            {friend?.profile_image ? (
+              <img 
+                src={`${API_BASE_URL}${friend.profile_image}`}
+                alt={username}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.parentElement.innerHTML = '👤';
+                }}
+              />
+            ) : (
+              '👤'
+            )}
           </div>
           <div>
             <h1 className="text-xl font-black">{username}</h1>
-            <p className="text-xs text-zinc-500 uppercase font-black tracking-widest">
+            <p className="text-xs text-gray-500 dark:text-zinc-500 uppercase font-black tracking-widest">
               {isConnected ? 'Active Now' : 'Connecting...'}
             </p>
           </div>
@@ -184,8 +196,8 @@ const Chat = () => {
       {/* Messages */}
       <GlassCard className="flex-1 overflow-y-auto p-4 mb-4 flex flex-col gap-4">
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-zinc-500 gap-2">
-            <div className="w-16 h-16 rounded-full bg-zinc-900 flex items-center justify-center text-3xl mb-2">
+          <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-zinc-500 gap-2">
+            <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-zinc-900 flex items-center justify-center text-3xl mb-2">
               💬
             </div>
             <p className="font-bold">No messages yet</p>
@@ -202,10 +214,10 @@ const Chat = () => {
                 <div className={`max-w-[80%] px-4 py-2 rounded-2xl ${
                   isMe 
                     ? 'bg-primary text-black font-medium rounded-tr-none' 
-                    : 'bg-zinc-800 text-white rounded-tl-none'
+                    : 'bg-gray-200 dark:bg-zinc-800 text-gray-900 dark:text-white rounded-tl-none'
                 }`}>
                   <p>{msg.content}</p>
-                  <p className={`text-[10px] mt-1 opacity-50 ${isMe ? 'text-black' : 'text-zinc-400'}`}>
+                  <p className={`text-[10px] mt-1 opacity-50 ${isMe ? 'text-black' : 'text-gray-500 dark:text-zinc-400'}`}>
                     {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
@@ -224,7 +236,7 @@ const Chat = () => {
           onChange={(e) => setInputText(e.target.value)}
           onKeyPress={(e) => e.key === 'Enter' && handleSend()}
           placeholder="Type a message..."
-          className="flex-1 bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors"
+          className="flex-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-gray-900 dark:text-white focus:outline-none focus:border-primary transition-colors"
         />
         <button
           onClick={handleSend}

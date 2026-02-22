@@ -14,10 +14,13 @@ import { useNavigate } from 'react-router-dom';
 import GlassCard from '../components/GlassCard';
 import GradientButton from '../components/GradientButton';
 import { useApi } from '../hooks/useApi';
+import { useApp } from '../contexts/AppContext';
+import { API_BASE_URL } from '../utils/api';
 
 const Leaderboard = () => {
   const navigate = useNavigate();
   const { get, post } = useApi();
+  const { sendDuelRequest } = useApp(); // Use sendDuelRequest from context
   const [filter, setFilter] = useState('global'); // 'global', 'friends', 'search'
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
@@ -144,12 +147,11 @@ const Leaderboard = () => {
   ];
 
   const handleDuelChallenge = (opponent) => {
-    navigate('/live-workout', {
-      state: {
-        duelMode: true,
-        opponent: opponent
-      }
-    });
+    if (!opponent || !opponent.username) return;
+    
+    // Send challenge via WebSocket
+    sendDuelRequest(opponent.username, 'squats'); // Default to squats for now
+    alert(`Challenge sent to ${opponent.username}!`);
   };
 
   const handleInternalChat = (user) => {
@@ -158,9 +160,9 @@ const Leaderboard = () => {
 
   const getRankColor = (rank) => {
     if (rank === 1) return 'text-yellow-500';
-    if (rank === 2) return 'text-zinc-400';
+    if (rank === 2) return 'text-gray-400 dark:text-zinc-400';
     if (rank === 3) return 'text-orange-500';
-    return 'text-zinc-500';
+    return 'text-gray-500 dark:text-zinc-500';
   };
 
   const getRankIcon = (rank) => {
@@ -173,12 +175,12 @@ const Leaderboard = () => {
   const displayData = leaderboardData;
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 pb-24 max-w-2xl mx-auto overflow-y-auto">
+    <div className="min-h-screen bg-gray-50 dark:bg-black text-gray-900 dark:text-white p-6 pb-24 max-w-2xl mx-auto overflow-y-auto transition-colors duration-300">
       {/* Header */}
       <div className="flex justify-between items-center mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div>
           <h1 className="text-3xl font-black">Leaderboard</h1>
-          <p className="text-zinc-500">Compete with the best</p>
+          <p className="text-gray-500 dark:text-zinc-500">Compete with the best</p>
         </div>
         <div className="w-14 h-14 rounded-2xl bg-yellow-500/15 flex items-center justify-center">
           <Trophy size={32} className="text-yellow-500" />
@@ -198,7 +200,7 @@ const Leaderboard = () => {
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${
               filter === tab.id 
                 ? 'bg-primary text-black scale-105' 
-                : 'bg-zinc-900/50 text-zinc-500 hover:bg-zinc-900'
+                : 'bg-white dark:bg-zinc-900/50 text-gray-500 dark:text-zinc-500 hover:bg-gray-100 dark:hover:bg-zinc-900 border border-gray-200 dark:border-transparent'
             }`}
           >
             <tab.icon size={16} />
@@ -211,11 +213,11 @@ const Leaderboard = () => {
       {filter === 'search' && (
         <div className="mb-6 animate-in zoom-in-95 duration-300">
           <GlassCard className="flex items-center gap-3 px-4 py-3">
-            <Search size={20} className="text-zinc-500" />
+            <Search size={20} className="text-gray-500 dark:text-zinc-500" />
             <input
               type="text"
               placeholder="Search users..."
-              className="bg-transparent border-none outline-none flex-1 text-white"
+              className="bg-transparent border-none outline-none flex-1 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-zinc-500"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -237,14 +239,26 @@ const Leaderboard = () => {
                   {getRankIcon(user.rank)}
                 </div>
               )}
-              <div className="w-12 h-12 rounded-xl bg-zinc-900 flex items-center justify-center text-2xl">
-                {user.avatar || user.profile_image || '👤'}
+              <div className="w-12 h-12 rounded-xl bg-gray-200 dark:bg-zinc-900 flex items-center justify-center overflow-hidden text-2xl">
+                {user.avatar && user.avatar !== '👤' ? (
+                  <img 
+                    src={user.avatar.startsWith('http') ? user.avatar : `${API_BASE_URL}${user.avatar}`} 
+                    alt={user.username} 
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.parentElement.innerText = '👤';
+                    }}
+                  />
+                ) : (
+                  '👤'
+                )}
               </div>
               <div>
                 <p className={`font-bold ${user.isCurrentUser ? 'text-primary' : ''}`}>
                   {user.username} {user.isCurrentUser ? '(You)' : ''}
                 </p>
-                <div className="flex items-center gap-3 text-xs text-zinc-500 font-bold">
+                <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-zinc-500 font-bold">
                   <span className="flex items-center gap-1">
                     <Flame size={12} className="text-orange-500" />
                     {user.streak || 0} days
@@ -270,7 +284,7 @@ const Leaderboard = () => {
                     </button>
                   )}
                   {user.friendship_status === 'pending' && (
-                    <div className="px-3 py-1 bg-zinc-900 rounded-lg text-[10px] font-black text-zinc-500 uppercase">
+                    <div className="px-3 py-1 bg-gray-200 dark:bg-zinc-900 rounded-lg text-[10px] font-black text-gray-500 dark:text-zinc-500 uppercase">
                       Pending
                     </div>
                   )}
@@ -293,7 +307,7 @@ const Leaderboard = () => {
                   )}
                   <button 
                     onClick={() => handleDuelChallenge(user)}
-                    className="p-2 bg-zinc-900 rounded-lg text-white hover:scale-110 transition-transform border border-white/10"
+                    className="p-2 bg-white dark:bg-zinc-900 rounded-lg text-gray-900 dark:text-white hover:scale-110 transition-transform border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-zinc-800"
                   >
                     <Swords size={16} />
                   </button>
@@ -312,7 +326,7 @@ const Leaderboard = () => {
           </div>
           <div>
             <h2 className="text-xl font-black">Duel Mode</h2>
-            <p className="text-sm text-zinc-500">Challenge anyone to a live workout battle</p>
+            <p className="text-sm text-gray-500 dark:text-zinc-500">Challenge anyone to a live workout battle</p>
           </div>
         </div>
         <GradientButton

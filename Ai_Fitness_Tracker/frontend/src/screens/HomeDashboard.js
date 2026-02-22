@@ -22,6 +22,8 @@ import GlassCard from '../components/GlassCard';
 import WaterTrackerCard from '../components/WaterTrackerCard';
 import GradientButton from '../components/GradientButton';
 import ProgressRing from '../components/ProgressRing';
+import AiAssistant from '../components/AiAssistant';
+import DietPlanCard from '../components/DietPlanCard';
 import { useApi } from '../hooks/useApi';
 import { useApp } from '../contexts/AppContext';
 
@@ -136,7 +138,7 @@ const HomeDashboard = () => {
   const weeklyProgress = dashboardData?.weekly_progress || [false, false, false, false, false, false, false];
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 pb-24 max-w-2xl mx-auto">
+    <div className="min-h-screen bg-gray-50 dark:bg-black text-gray-900 dark:text-white p-6 pb-24 max-w-2xl mx-auto transition-colors duration-300">
       {/* Header */}
       <div className="flex justify-between items-start mb-8 animate-in fade-in slide-in-from-top-4 duration-500">
         <div>
@@ -144,7 +146,7 @@ const HomeDashboard = () => {
           <p className="text-zinc-500 text-sm">Ready to crush your goals?</p>
         </div>
         <div className="flex flex-col items-end gap-2">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-2 px-4 flex items-center gap-3">
+          <div className="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-2 px-4 flex items-center gap-3">
             <div className="text-right">
               <p className="text-xl font-black text-orange-500 leading-none">{dashboardData?.streak || 0}</p>
               <p className="text-[8px] font-bold text-zinc-500 uppercase tracking-tighter">DAY STREAK</p>
@@ -165,7 +167,7 @@ const HomeDashboard = () => {
           {weeklyProgress.map((completed, index) => (
             <div
               key={index}
-              className={`h-2 flex-1 rounded-full transition-all duration-500 ${completed ? 'bg-primary' : 'bg-zinc-800'}`}
+              className={`h-2 flex-1 rounded-full transition-all duration-500 ${completed ? 'bg-primary' : 'bg-zinc-200 dark:bg-zinc-800'}`}
             />
           ))}
         </div>
@@ -210,13 +212,18 @@ const HomeDashboard = () => {
       )}
 
       {/* Water Tracker */}
-      <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
+      <div className="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
         <WaterTrackerCard 
           current={dashboardData?.water_intake?.current || 0}
           goal={dashboardData?.water_intake?.goal || 2500}
           onAdd={handleLogWater}
           onRemove={handleRemoveWater}
         />
+      </div>
+
+      {/* Diet Plan */}
+      <div className="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-400">
+        <DietPlanCard dietPlan={dashboardData?.diet_plan} />
       </div>
 
       {/* Daily Summary */}
@@ -237,21 +244,21 @@ const HomeDashboard = () => {
         </div>
 
         <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="flex flex-col items-center p-3 bg-zinc-900/50 rounded-2xl border border-zinc-800">
+          <div className="flex flex-col items-center p-3 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border border-zinc-200 dark:border-zinc-800">
             <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center mb-2">
               <Clock size={16} className="text-cyan-400" />
             </div>
             <p className="text-lg font-black">{dashboardData?.stats_summary?.minutes || 0}</p>
             <p className="text-[8px] font-bold text-zinc-500 uppercase">MIN</p>
           </div>
-          <div className="flex flex-col items-center p-3 bg-zinc-900/50 rounded-2xl border border-zinc-800">
+          <div className="flex flex-col items-center p-3 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border border-zinc-200 dark:border-zinc-800">
             <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center mb-2">
               <Dumbbell size={16} className="text-purple-400" />
             </div>
             <p className="text-lg font-black">{dashboardData?.stats_summary?.exercises || 0}</p>
             <p className="text-[8px] font-bold text-zinc-500 uppercase">EXS</p>
           </div>
-          <div className="flex flex-col items-center p-3 bg-zinc-900/50 rounded-2xl border border-zinc-800">
+          <div className="flex flex-col items-center p-3 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border border-zinc-200 dark:border-zinc-800">
             <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center mb-2">
               <Zap size={16} className="text-orange-400" />
             </div>
@@ -262,9 +269,9 @@ const HomeDashboard = () => {
 
         <button 
           onClick={() => setShowCoachModal(true)}
-          className="w-full bg-white text-black font-black py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-zinc-200 transition-colors active:scale-[0.98]"
+          className="w-full bg-zinc-100 dark:bg-zinc-800 text-black dark:text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all active:scale-[0.98]"
         >
-          <Play size={20} className="fill-black" />
+          <Play size={20} className="fill-black dark:fill-white" />
           Quick Start
         </button>
       </GlassCard>
@@ -286,7 +293,7 @@ const HomeDashboard = () => {
                   setSelectedRoutine(routine);
                   setShowCoachModal(true);
                 }}
-                className="flex-shrink-0 w-40 p-4 bg-zinc-900/50 border border-zinc-800 rounded-2xl text-left hover:border-zinc-700 transition-all active:scale-95"
+                className="flex-shrink-0 w-40 p-4 bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 rounded-2xl text-left hover:border-zinc-300 dark:hover:border-zinc-700 transition-all active:scale-95"
               >
                 <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center mb-3">
                   <Dumbbell size={16} className="text-blue-400" />
@@ -301,7 +308,7 @@ const HomeDashboard = () => {
 
       {/* Grid Stats */}
       <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-600">
-        <div className="p-4 bg-zinc-900/30 border border-orange-500/10 rounded-2xl">
+        <div className="p-4 bg-zinc-50 dark:bg-zinc-900/30 border border-orange-500/10 rounded-2xl">
           <div className="flex justify-between items-center mb-3">
             <Flame size={20} className="text-orange-500" />
             <span className="text-[8px] font-black text-zinc-500">GOAL: {dashboardData?.stats_summary?.calories_goal || 500}</span>
@@ -309,7 +316,7 @@ const HomeDashboard = () => {
           <p className="text-2xl font-black mb-1">{dashboardData?.stats_summary?.calories || 0}</p>
           <p className="text-[10px] font-bold text-zinc-500 uppercase">Calories Today</p>
         </div>
-        <div className="p-4 bg-zinc-900/30 border border-green-500/10 rounded-2xl">
+        <div className="p-4 bg-zinc-50 dark:bg-zinc-900/30 border border-green-500/10 rounded-2xl">
           <div className="flex justify-between items-center mb-3">
             <Zap size={20} className="text-green-500" />
             <span className="text-[8px] font-black text-green-500">
@@ -321,10 +328,15 @@ const HomeDashboard = () => {
         </div>
       </div>
 
+      {/* Ai Assistant */}
+      <div className="fixed top-20 right-4 z-50">
+          <AiAssistant />
+      </div>
+
       {/* Refresh Button (Float) */}
       <button 
-        onClick={onRefresh}
-        className={`fixed bottom-24 right-6 w-12 h-12 bg-zinc-900 border border-zinc-800 rounded-full flex items-center justify-center shadow-2xl transition-all active:rotate-180 ${refreshing ? 'animate-spin' : ''}`}
+        onClick={fetchDashboardData}
+        className={`fixed bottom-24 right-6 w-12 h-12 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-full flex items-center justify-center shadow-2xl transition-all active:rotate-180 ${refreshing ? 'animate-spin' : ''}`}
       >
         <RefreshCw size={20} className="text-primary" />
       </button>
@@ -332,13 +344,13 @@ const HomeDashboard = () => {
       {/* Coach Modal */}
       {showCoachModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4 animate-in fade-in duration-300">
-          <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-t-[32px] sm:rounded-[32px] p-6 animate-in slide-in-from-bottom-8 duration-300">
+          <div className="w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-t-[32px] sm:rounded-[32px] p-6 animate-in slide-in-from-bottom-8 duration-300">
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h2 className="text-2xl font-black">Choose Your Coach</h2>
                 <p className="text-zinc-500 text-sm">Premium AI coaching experience</p>
               </div>
-              <button onClick={() => setShowCoachModal(false)} className="p-2 bg-zinc-800 rounded-full text-zinc-500">
+              <button onClick={() => setShowCoachModal(false)} className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-full text-zinc-500">
                 <X size={24} />
               </button>
             </div>
@@ -349,21 +361,25 @@ const HomeDashboard = () => {
                   key={p.id}
                   disabled={p.premium && !isPremium}
                   onClick={() => handleStartWorkout(p.id)}
-                  className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all text-left active:scale-[0.98] ${p.premium && !isPremium ? 'opacity-50 border-zinc-800 bg-zinc-950/50 cursor-not-allowed' : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'}`}
+                  className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all text-left active:scale-[0.98] ${
+                    p.premium && !isPremium 
+                      ? 'opacity-50 border-gray-200 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-950/50 cursor-not-allowed' 
+                      : 'bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-800 hover:border-primary dark:hover:border-zinc-700 hover:shadow-sm'
+                  }`}
                 >
                   <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${p.color}15` }}>
                     {p.icon}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <span className="font-bold">{p.name}</span>
+                      <span className="font-bold text-gray-900 dark:text-white">{p.name}</span>
                       {p.premium && (
                         <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-primary rounded text-[8px] font-black text-black">
                           <Zap size={8} className="fill-black" /> PREMIUM
                         </div>
                       )}
                     </div>
-                    <p className="text-xs text-zinc-500">{p.description}</p>
+                    <p className="text-xs text-gray-500 dark:text-zinc-500">{p.description}</p>
                   </div>
                   <Play size={20} style={{ color: p.color, fill: p.color }} />
                 </button>

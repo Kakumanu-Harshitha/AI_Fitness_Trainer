@@ -42,7 +42,7 @@ const WorkoutSummary = () => {
     };
 
     return (
-        <div className="min-h-screen bg-zinc-950 text-white p-6 pb-24 overflow-y-auto">
+        <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 text-gray-900 dark:text-white p-6 pb-24 overflow-y-auto transition-colors duration-300">
             <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {/* Header */}
                 <div className="flex flex-col items-center text-center space-y-4 pt-12">
@@ -51,7 +51,7 @@ const WorkoutSummary = () => {
                     </div>
                     <div className="space-y-1">
                         <h1 className="text-3xl font-black tracking-tighter uppercase">Workout Complete!</h1>
-                        <p className="text-zinc-400 font-bold uppercase text-xs tracking-widest">Great job crushing that session 🔥</p>
+                        <p className="text-gray-500 dark:text-zinc-400 font-bold uppercase text-xs tracking-widest">Great job crushing that session 🔥</p>
                     </div>
                 </div>
 
@@ -62,13 +62,13 @@ const WorkoutSummary = () => {
                         <span className="text-xl font-black text-primary">+{xpGained} XP</span>
                     </div>
                     <div className="space-y-3">
-                        <div className="h-3 bg-zinc-900 rounded-full overflow-hidden border border-white/5">
+                        <div className="h-3 bg-gray-200 dark:bg-zinc-900 rounded-full overflow-hidden border border-gray-300 dark:border-white/5">
                             <div 
                                 className="h-full bg-primary transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(180,255,57,0.5)]"
                                 style={{ width: `${levelProgress}%` }}
                             />
                         </div>
-                        <p className="text-center text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+                        <p className="text-center text-[10px] font-bold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">
                             {currentXP} / {nextLevelXP} XP
                         </p>
                     </div>
@@ -78,19 +78,19 @@ const WorkoutSummary = () => {
                 <div className="grid grid-cols-2 gap-4">
                     <GlassCard className="flex flex-col items-center justify-center p-6 text-center space-y-1">
                         <span className="text-3xl font-black">{reps}</span>
-                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Reps</span>
+                        <span className="text-[10px] font-bold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Reps</span>
                     </GlassCard>
 
                     <GlassCard className="flex flex-col items-center justify-center p-6 text-center space-y-1">
                         <span className="text-3xl font-black">
                             {Math.floor(duration / 60)}:{(duration % 60).toString().padStart(2, '0')}
                         </span>
-                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Time</span>
+                        <span className="text-[10px] font-bold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Time</span>
                     </GlassCard>
 
                     <GlassCard className="flex flex-col items-center justify-center p-6 text-center space-y-1">
                         <span className="text-3xl font-black">{calories}</span>
-                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Kcal</span>
+                        <span className="text-[10px] font-bold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Kcal</span>
                     </GlassCard>
 
                     <GlassCard className="flex flex-col items-center justify-center p-6 text-center space-y-1">
@@ -104,7 +104,7 @@ const WorkoutSummary = () => {
                                 <span className="text-sm font-black">{avgScore}%</span>
                             </ProgressRing>
                         </div>
-                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Avg Form</span>
+                        <span className="text-[10px] font-bold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Avg Form</span>
                     </GlassCard>
                 </div>
 
@@ -130,7 +130,7 @@ const WorkoutSummary = () => {
                 <div className="flex gap-4">
                     <button 
                         onClick={handleShare}
-                        className="flex-1 h-14 bg-zinc-900 border border-white/10 rounded-2xl flex items-center justify-center gap-3 text-zinc-400 font-bold uppercase tracking-widest hover:text-white hover:bg-zinc-800 transition-all active:scale-95"
+                        className="flex-1 h-14 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-white/10 rounded-2xl flex items-center justify-center gap-3 text-gray-900 dark:text-zinc-400 font-bold uppercase tracking-widest hover:bg-gray-50 dark:hover:text-white dark:hover:bg-zinc-800 transition-all active:scale-95 shadow-sm"
                     >
                         <Share2 size={20} />
                         Share
@@ -149,16 +149,16 @@ const WorkoutSummary = () => {
                         <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center text-green-500">
                             <TrendingUp size={18} />
                         </div>
-                        <p className="text-sm font-bold text-zinc-300">
-                            Personal best: <span className="text-white font-black">{reps} reps</span>
+                        <p className="text-sm font-bold text-gray-700 dark:text-zinc-300">
+                            Personal best: <span className="text-gray-900 dark:text-white font-black">{reps} reps</span>
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500">
                             <Trophy size={18} />
                         </div>
-                        <p className="text-sm font-bold text-zinc-300">
-                            Streak: <span className="text-white font-black">7 days 🔥</span>
+                        <p className="text-sm font-bold text-gray-700 dark:text-zinc-300">
+                            Streak: <span className="text-gray-900 dark:text-white font-black">7 days 🔥</span>
                         </p>
                     </div>
                 </GlassCard>

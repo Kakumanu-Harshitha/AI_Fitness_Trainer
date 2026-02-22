@@ -21,12 +21,21 @@ from .api.v1.dashboard import router as dashboard_router
 from .api.v1.voice_commands import router as voice_router
 from .api.v1.websockets import router as ws_router
 from .api.v1.water import router as water_router
+from .api.v1.chatbot import router as chatbot_router
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title=settings.PROJECT_NAME)
+
+# Mount static files
+# Get absolute path to static directory
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STATIC_DIR = os.path.join(BASE_DIR, "static")
+os.makedirs(STATIC_DIR, exist_ok=True)
+
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 # Exception handler for database integrity errors (e.g. unique constraints)
 @app.exception_handler(IntegrityError)
@@ -64,7 +73,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 # Create database tables (Sync for startup, better to use Alembic in prod)
 # Only run this if not using migrations
-# Base.metadata.create_all(bind=sync_engine)
+Base.metadata.create_all(bind=sync_engine)
 
 @app.on_event("startup")
 async def startup_event():
@@ -96,6 +105,7 @@ app.include_router(dashboard_router, prefix=settings.API_V1_STR)
 app.include_router(voice_router, prefix=settings.API_V1_STR)
 app.include_router(ws_router, prefix=settings.API_V1_STR)
 app.include_router(water_router, prefix=settings.API_V1_STR)
+app.include_router(chatbot_router, prefix=settings.API_V1_STR)
 
 # Add RateLimitMiddleware
 app.add_middleware(RateLimitMiddleware, redis_service=redis_service, limit=100, window=60)
@@ -103,14 +113,8 @@ app.add_middleware(RateLimitMiddleware, redis_service=redis_service, limit=100, 
 # CORS configuration (Added LAST so it wraps everything else and runs FIRST for requests)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:8001",
-        "http://127.0.0.1:8001",
-        "http://localhost:8080",
-        "http://127.0.0.1:8080",
-    ],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:8081"], # Explicitly list allowed origins
+    allow_origin_regex="https?://.*", # Allow all http/https origins for development flexibility
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

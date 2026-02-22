@@ -41,7 +41,7 @@ const BottomSheet = ({
       onClick={onClose}
     >
       <div
-        className={`bg-zinc-900 border-t border-white/10 rounded-t-[32px] transition-transform duration-300 ease-out flex flex-col ${
+        className={`bg-white dark:bg-zinc-900 border-t border-gray-200 dark:border-white/10 rounded-t-[32px] transition-all duration-300 ease-out flex flex-col ${
           visible ? 'translate-y-0' : 'translate-y-full'
         }`}
         style={{ maxHeight: height }}
@@ -49,14 +49,14 @@ const BottomSheet = ({
       >
         {/* Header */}
         {(title || showCloseButton) && (
-          <div className="flex flex-row justify-between items-center p-6 pb-4 border-b border-white/5">
-            {title && <h2 className="text-white text-2xl font-black">{title}</h2>}
+          <div className="flex flex-row justify-between items-center p-6 pb-4 border-b border-gray-100 dark:border-white/5">
+            {title && <h2 className="text-gray-900 dark:text-white text-2xl font-black">{title}</h2>}
             {showCloseButton && (
               <button
-                className="p-1 hover:bg-white/5 rounded-full transition-colors"
+                className="p-1 hover:bg-gray-100 dark:hover:bg-white/5 rounded-full transition-colors"
                 onClick={onClose}
               >
-                <X size={24} className="text-zinc-400" />
+                <X size={24} className="text-gray-500 dark:text-zinc-400" />
               </button>
             )}
           </div>

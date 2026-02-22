@@ -47,15 +47,15 @@ const ExerciseModal = ({ visible, onClose, onSelectExercise, selectedIds = [] })
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-      <div className="bg-zinc-950 w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-[32px] border border-zinc-800 flex flex-col animate-in slide-in-from-bottom duration-500">
+      <div className="bg-white dark:bg-zinc-950 w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-[32px] border border-gray-200 dark:border-zinc-800 flex flex-col animate-in slide-in-from-bottom duration-500 transition-colors duration-300">
         {/* Header */}
-        <div className="p-6 border-b border-zinc-900 flex justify-between items-center">
-          <h2 className="text-xl font-black">Exercise Library</h2>
+        <div className="p-6 border-b border-gray-200 dark:border-zinc-900 flex justify-between items-center">
+          <h2 className="text-xl font-black text-gray-900 dark:text-white">Exercise Library</h2>
           <button 
             onClick={onClose}
-            className="p-2 hover:bg-zinc-900 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-900 rounded-full transition-colors"
           >
-            <X size={24} className="text-zinc-400" />
+            <X size={24} className="text-gray-500 dark:text-zinc-400" />
           </button>
         </div>
 
@@ -64,7 +64,7 @@ const ExerciseModal = ({ visible, onClose, onSelectExercise, selectedIds = [] })
           <input
             type="text"
             placeholder="Search exercises..."
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-white focus:outline-none focus:border-primary transition-colors"
+            className="w-full bg-gray-100 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl p-3 text-gray-900 dark:text-white focus:outline-none focus:border-primary transition-colors"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -79,7 +79,7 @@ const ExerciseModal = ({ visible, onClose, onSelectExercise, selectedIds = [] })
               className={`flex items-center gap-2 px-4 py-2 rounded-xl whitespace-nowrap transition-all border ${
                 selectedCategory === cat.id 
                   ? 'bg-primary/10 border-primary text-primary' 
-                  : 'bg-zinc-900 border-zinc-800 text-zinc-400'
+                  : 'bg-gray-100 dark:bg-zinc-900 border-gray-200 dark:border-zinc-800 text-gray-500 dark:text-zinc-400'
               }`}
             >
               <span>{cat.icon}</span>
@@ -97,7 +97,7 @@ const ExerciseModal = ({ visible, onClose, onSelectExercise, selectedIds = [] })
               className={`text-left p-4 rounded-2xl border transition-all ${
                 selectedIds.includes(exercise.id)
                   ? 'bg-primary/5 border-primary'
-                  : 'bg-zinc-900/50 border-zinc-800 hover:border-zinc-700'
+                  : 'bg-gray-50 dark:bg-zinc-900/50 border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700'
               }`}
             >
               <div className="flex justify-between items-start mb-2">

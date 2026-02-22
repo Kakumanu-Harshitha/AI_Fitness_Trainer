@@ -110,19 +110,19 @@ const VoiceModal = ({ visible, onClose, onSubmit }) => {
             />
 
             {/* Modal Content */}
-            <div className="relative w-full max-w-lg bg-zinc-900 border-t sm:border border-zinc-800 rounded-t-[32px] sm:rounded-[32px] p-6 pb-10 sm:pb-8 shadow-2xl animate-in slide-in-from-bottom duration-300">
+            <div className="relative w-full max-w-lg bg-white dark:bg-zinc-900 border-t sm:border border-gray-200 dark:border-zinc-800 rounded-t-[32px] sm:rounded-[32px] p-6 pb-10 sm:pb-8 shadow-2xl animate-in slide-in-from-bottom duration-300 transition-colors duration-300">
                 {/* Header */}
                 <div className="flex items-center gap-4 mb-6">
                     <div className="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center">
                         <Mic size={24} className="text-primary" />
                     </div>
                     <div className="flex-1">
-                        <h3 className="text-xl font-black text-white">AI Coach</h3>
-                        <p className="text-xs text-zinc-400 font-bold uppercase tracking-wider">Ask me anything about your workout</p>
+                        <h3 className="text-xl font-black text-gray-900 dark:text-white">AI Coach</h3>
+                        <p className="text-xs text-gray-500 dark:text-zinc-400 font-bold uppercase tracking-wider">Ask me anything about your workout</p>
                     </div>
                     <button 
                         onClick={handleClose}
-                        className="p-2 text-zinc-500 hover:text-white transition-colors"
+                        className="p-2 text-gray-400 dark:text-zinc-500 hover:text-gray-900 dark:hover:text-white transition-colors"
                     >
                         <X size={24} />
                     </button>
@@ -131,7 +131,7 @@ const VoiceModal = ({ visible, onClose, onSubmit }) => {
                 {/* Response Display */}
                 {response && (
                     <div className="bg-primary/10 border border-primary/20 rounded-2xl p-4 mb-6 animate-in fade-in zoom-in duration-300">
-                        <p className="text-sm text-zinc-200 leading-relaxed">{response}</p>
+                        <p className="text-sm text-gray-800 dark:text-zinc-200 leading-relaxed">{response}</p>
                     </div>
                 )}
 
@@ -156,7 +156,7 @@ const VoiceModal = ({ visible, onClose, onSubmit }) => {
 
                     <div className="flex-1 relative">
                         <textarea
-                            className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl px-4 py-3 text-white placeholder:text-zinc-600 focus:outline-none focus:border-primary/50 transition-colors resize-none h-[48px]"
+                            className="w-full bg-gray-100 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-2xl px-4 py-3 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-zinc-600 focus:outline-none focus:border-primary/50 transition-colors resize-none h-[48px]"
                             placeholder={isRecording ? "Listening..." : "e.g., How's my form?"}
                             value={question}
                             onChange={(e) => setQuestion(e.target.value)}
@@ -176,7 +176,7 @@ const VoiceModal = ({ visible, onClose, onSubmit }) => {
                         className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 ${
                             question.trim() && !isRecording && !processing
                                 ? 'bg-primary text-black'
-                                : 'bg-zinc-800 text-zinc-600'
+                                : 'bg-gray-200 dark:bg-zinc-800 text-gray-400 dark:text-zinc-600'
                         }`}
                     >
                         {processing ? (
@@ -189,7 +189,7 @@ const VoiceModal = ({ visible, onClose, onSubmit }) => {
 
                 {/* Quick Prompts */}
                 <div className="space-y-3">
-                    <p className="text-[10px] font-extrabold text-zinc-500 uppercase tracking-widest">Quick questions:</p>
+                    <p className="text-[10px] font-extrabold text-gray-500 dark:text-zinc-500 uppercase tracking-widest">Quick questions:</p>
                     <div className="flex flex-wrap gap-2">
                         {['How\'s my form?', 'Am I fatigued?', 'Tips for squats'].map((prompt) => (
                             <button
@@ -197,7 +197,7 @@ const VoiceModal = ({ visible, onClose, onSubmit }) => {
                                 type="button"
                                 onClick={() => setQuestion(prompt)}
                                 disabled={processing}
-                                className="bg-zinc-950 border border-zinc-800 rounded-xl py-2 px-4 text-xs font-bold text-zinc-400 hover:text-white hover:border-zinc-700 transition-all active:scale-95"
+                                className="bg-gray-100 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 rounded-xl py-2 px-4 text-xs font-bold text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white hover:border-gray-300 dark:hover:border-zinc-700 transition-all active:scale-95"
                             >
                                 {prompt}
                             </button>

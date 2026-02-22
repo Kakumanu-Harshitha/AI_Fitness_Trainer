@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useRef, useCallback } from 'react';
 import { PostureScoreSystem, ExerciseStateMachine, CoachEngine } from '../utils/engines';
+import { YogaEngine, MeditationEngine } from '../utils/mindfulness';
 
 const WorkoutContext = createContext(undefined);
 
@@ -40,8 +41,18 @@ export const WorkoutProvider = ({ children }) => {
 
       // Initialize engines
       scoreSystem.current.reset();
-      stateMachine.current = new ExerciseStateMachine(exercise);
       coach.current.reset();
+
+      if (workoutRoutine?.type === 'mindfulness') {
+        if (exercise.type === 'yoga') {
+          stateMachine.current = new YogaEngine();
+          stateMachine.current.setPose(exercise.name);
+        } else if (exercise.type === 'meditation') {
+          stateMachine.current = new MeditationEngine();
+        }
+      } else {
+        stateMachine.current = new ExerciseStateMachine(exercise);
+      }
 
       setSessionStats(INITIAL_STATS);
     } catch (error) {
@@ -53,53 +64,61 @@ export const WorkoutProvider = ({ children }) => {
     if (!isActive || !stateMachine.current) return null;
 
     try {
-      // Update posture score
-      const scoreData = scoreSystem.current.update(landmarks);
+      let result = {};
+      let advice = "";
+      let newScore = 0;
+      let newReps = sessionStats.reps;
 
-      // Update rep count
-      const repData = stateMachine.current.update(landmarks);
-      
-      if (repData.repDetected) {
-        console.log('[WorkoutContext] Rep detected!', repData.repCount);
+      if (routine?.type === 'mindfulness') {
+        // Mindfulness Logic
+        const data = stateMachine.current.update(landmarks);
+        
+        if (currentExercise.type === 'yoga') {
+          // data: { feedback, isCorrect, holdTime, score }
+          newScore = data.score;
+          newReps = Math.floor(data.holdTime); // Use hold time as "reps" for display
+          advice = data.feedback;
+        } else {
+          // data: { feedback, breathRate, duration, isMeditating }
+          newScore = 100; // Default score for meditation if detected
+          newReps = data.breathRate;
+          advice = data.feedback;
+        }
+        
+        result = { score: { total: newScore }, reps: { repCount: newReps }, advice };
+      } else {
+        // Standard Workout Logic
+        const scoreData = scoreSystem.current.update(landmarks);
+        const repData = stateMachine.current.update(landmarks);
+        advice = coach.current.update(scoreData);
+        
+        newScore = scoreData.total;
+        newReps = repData.repCount;
+        
+        result = { score: scoreData, reps: repData, advice };
       }
 
-      // Get coach advice
-      const advice = coach.current.update(scoreData);
+      setSessionStats(prev => {
+        const newScores = newScore > 0 ? [...prev.scores, newScore] : prev.scores;
+        let currentAvg = prev.avgScore;
+        if (newScores.length > 0) {
+          currentAvg = Math.round(newScores.reduce((a, b) => a + b, 0) / newScores.length);
+        }
 
-    // Update session stats
-    setSessionStats(prev => {
-      const newScore = scoreData.total;
-      // Only include score if it's non-zero (landmarks detected)
-      const newScores = newScore > 0 ? [...prev.scores, newScore] : prev.scores;
-      
-      // Calculate running average
-      let currentAvg = prev.avgScore;
-      if (newScores.length > 0) {
-        const totalScore = newScores.reduce((a, b) => a + b, 0);
-        currentAvg = Math.round(totalScore / newScores.length);
-      }
+        return {
+          ...prev,
+          reps: newReps,
+          avgScore: currentAvg,
+          scores: newScores,
+        };
+      });
 
-      // Update reps and detect changes
-      const newReps = repData.repCount;
-      
-      return {
-        ...prev,
-        reps: newReps,
-        avgScore: currentAvg,
-        scores: newScores,
-      };
-    });
-
-      return {
-        score: scoreData,
-        reps: repData,
-        advice,
-      };
+      return result;
     } catch (error) {
       console.error('[WorkoutContext] Update error:', error);
       return null;
     }
-  }, [isActive]);
+  }, [isActive, routine, currentExercise, sessionStats.reps]);
 
   const incrementTime = useCallback(() => {
     setSessionStats(prev => ({

@@ -15,6 +15,24 @@ class UserLogin(BaseModel):
     username: str
     password: str
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+class ChangePasswordRequest(BaseModel):
+    new_password: str
+    totp_code: Optional[str] = None
+
+class TOTPSetupResponse(BaseModel):
+    secret: str
+    qr_code: str
+
+class TOTPVerifyRequest(BaseModel):
+    otp: str
+
 class UserRegister(UserBase):
     password: str
 
@@ -30,6 +48,13 @@ class UserResponse(UserBase):
     age: Optional[int] = None
     height_cm: Optional[float] = None
     weight_kg: Optional[float] = None
+    body_type: Optional[str] = None
+    diet_goal: Optional[str] = None
+    activity_level: Optional[str] = None
+    daily_sleep_goal: Optional[float] = None
+    daily_water_goal: Optional[int] = None
+    injuries: Optional[str] = None
+    dietary_preferences: Optional[str] = None
     created_at: Optional[datetime] = None
     # Stats fields for profile
     total_workouts: Optional[int] = 0
@@ -39,6 +64,7 @@ class UserResponse(UserBase):
     total_reps: Optional[int] = 0
     # Social field
     friendship_status: Optional[str] = None
+    is_totp_enabled: Optional[bool] = False
 
     model_config = {
         "from_attributes": True
@@ -50,6 +76,13 @@ class ProfileUpdate(BaseModel):
     age: Optional[int] = None
     height_cm: Optional[float] = None
     weight_kg: Optional[float] = None
+    body_type: Optional[str] = None
+    diet_goal: Optional[str] = None
+    activity_level: Optional[str] = None
+    daily_sleep_goal: Optional[float] = None
+    daily_water_goal: Optional[int] = None
+    injuries: Optional[str] = None
+    dietary_preferences: Optional[str] = None
     bio: Optional[str] = None
 
 class ProfileResponse(BaseModel):
@@ -114,6 +147,7 @@ class RoutineCreate(BaseModel):
     description: Optional[str] = None
     complexity: Optional[str] = "BALANCED"
     vision_complexity: Optional[str] = "NORMAL"
+    type: Optional[str] = "fitness"
     steps: List[RoutineStepCreate]
 
 class RoutineResponse(BaseModel):
@@ -122,6 +156,7 @@ class RoutineResponse(BaseModel):
     description: Optional[str]
     complexity: Optional[str]
     vision_complexity: Optional[str]
+    type: Optional[str]
     steps: List[RoutineStepResponse]
     created_at: datetime
 
@@ -203,6 +238,12 @@ class AIPulseResponse(BaseModel):
     duration: int
     calories: int
 
+class DietPlanResponse(BaseModel):
+    pre_workout: str
+    post_workout: str
+    analysis: str
+    management_suggestion: str
+
 class DashboardResponse(BaseModel):
     greeting: str
     streak: int
@@ -210,6 +251,7 @@ class DashboardResponse(BaseModel):
     ai_pulse: AIPulseResponse
     stats_summary: Dict[str, Any]
     water_intake: Dict[str, Any]
+    diet_plan: Optional[DietPlanResponse] = None
 
 # -------- SOCIAL SCHEMAS --------
 

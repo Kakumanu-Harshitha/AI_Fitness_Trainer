@@ -1,5 +1,8 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+import shutil
+import os
+import uuid
 
 from ...db.models import User
 from ...schemas.schemas import UserResponse, ProfileUpdate, ProfileResponse
@@ -48,7 +51,8 @@ async def get_profile(
             "total_calories": stats.total_calories or 0.0,
             "avg_score": stats.avg_score or 0.0,
             "total_reps": stats.total_reps or 0,
-            "created_at": user.created_at
+            "created_at": user.created_at,
+            "is_totp_enabled": bool(user.is_totp_enabled) if user.is_totp_enabled is not None else False
         }
         print(f"DEBUG: get_profile returning data for {user.username}")
         return user_dict
@@ -58,6 +62,47 @@ async def get_profile(
         traceback.print_exc()
         raise e
 
+
+@router.post("/avatar", response_model=UserResponse)
+async def upload_avatar(
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    # Validate file type
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File must be an image")
+    
+    # Create upload directory if not exists
+    # Use absolute path based on this file's location: backend/app/api/v1/users.py
+    # We want backend/app/static/uploads
+    # ../../.. -> backend/app
+    
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    upload_dir = os.path.join(base_dir, "static", "uploads")
+    os.makedirs(upload_dir, exist_ok=True)
+    
+    # Generate unique filename
+    file_extension = os.path.splitext(file.filename)[1]
+    filename = f"user_{user.id}_{uuid.uuid4()}{file_extension}"
+    file_path = os.path.join(upload_dir, filename)
+    
+    # Save file
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    # Update user profile image URL
+    # Store relative path for frontend to use
+    relative_path = f"/static/uploads/{filename}"
+    user.profile_image = relative_path
+    
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    
+    # Return user response (reusing get_profile logic essentially, but simpler for now)
+    # We need to construct the response matching UserResponse
+    return user
 
 @router.post("", response_model=ProfileResponse)
 async def update_profile(

@@ -21,11 +21,16 @@ export const useApi = () => {
 
     const fullUrl = endpoint.startsWith('http') ? endpoint : `${API_URL}${endpoint}`;
     
+    const isFormData = options.body instanceof FormData;
+
     const requestHeaders = {
-      'Content-Type': 'application/json',
       'Accept': 'application/json',
       ...headers,
     };
+
+    if (!isFormData) {
+      requestHeaders['Content-Type'] = 'application/json';
+    }
 
     if (token && !skipAuth) {
       requestHeaders['Authorization'] = `Bearer ${token}`;
@@ -65,11 +70,23 @@ export const useApi = () => {
   const get = useCallback((endpoint, options) => 
     request(endpoint, { ...options, method: 'GET' }), [request]);
 
-  const post = useCallback((endpoint, body, options) => 
-    request(endpoint, { ...options, method: 'POST', body: JSON.stringify(body) }), [request]);
+  const post = useCallback((endpoint, body, options = {}) => {
+    const isFormData = body instanceof FormData;
+    return request(endpoint, {
+      ...options,
+      method: 'POST',
+      body: isFormData ? body : JSON.stringify(body),
+    });
+  }, [request]);
 
-  const put = useCallback((endpoint, body, options) => 
-    request(endpoint, { ...options, method: 'PUT', body: JSON.stringify(body) }), [request]);
+  const put = useCallback((endpoint, body, options = {}) => {
+    const isFormData = body instanceof FormData;
+    return request(endpoint, {
+      ...options,
+      method: 'PUT',
+      body: isFormData ? body : JSON.stringify(body),
+    });
+  }, [request]);
 
   const del = useCallback((endpoint, options) => 
     request(endpoint, { ...options, method: 'DELETE' }), [request]);
