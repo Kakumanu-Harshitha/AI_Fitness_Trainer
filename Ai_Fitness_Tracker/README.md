@@ -20,9 +20,9 @@ The system follows a modular, service‑oriented architecture with clear separat
 graph TD
   U[User] --> R[React + Tailwind]
   R -->|REST| F[FastAPI]
-  R <-->|WS| WS[WebSocket: Chat & Coach]
-  F -->|Pose Frames| CV[MediaPipe Pose<br/>+ State Machines]
-  F -->|/ai/personalize| RF[Personalization Model<br/>(Random Forest)]
+  R <-->|WS| WS[WebSocket Chat + Coach]
+  F -->|Pose Frames| CV[MediaPipe Pose + State Machines]
+  F -->|/ai/personalize| RF[Personalization Model (Random Forest)]
   F --> DB[(PostgreSQL)]
   F --> LLM[LLM Coach]
   RF --> F
@@ -53,8 +53,8 @@ Key ideas
 ```mermaid
 flowchart LR
   Raw[User + Dataset] --> Prep[Preprocess + Encode]
-  Prep --> FE[Feature Engineering<br/>(BMI, goal, BMR)]
-  FE --> Train[RandomForestRegressor<br/>Multi‑Output]
+  Prep --> FE[Feature Engineering (BMI, goal, BMR)]
+  FE --> Train[RandomForestRegressor Multi‑Output]
   Train --> Save[joblib pipeline]
   Save --> Serve[FastAPI /ai/personalize]
 ```
