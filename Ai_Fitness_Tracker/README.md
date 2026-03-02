@@ -17,17 +17,17 @@ The system follows a modular, service‑oriented architecture with clear separat
 ### A) High‑Level Architecture
 
 ```mermaid
-graph TD
-  U[User] --> R[React + Tailwind]
-  R -->|REST| F[FastAPI]
-  R <-->|WS| WS[WebSocket Chat + Coach]
-  F -->|Pose Frames| CV[MediaPipe Pose + State Machines]
-  F -->|/ai/personalize| RF[Personalization Model (Random Forest)]
-  F --> DB[(PostgreSQL)]
-  F --> LLM[LLM Coach]
-  RF --> F
-  CV --> F
-  LLM --> WS
+graph TD;
+  U[User] --> R[React+Tailwind];
+  R -->|REST| F[FastAPI];
+  R <-->|WS| WS[WebSocket];
+  F -->|Pose frames| CV[MediaPipe+States];
+  F --> RF[RF Model];
+  F --> DB[(PostgreSQL)];
+  F --> LLM[LLM Coach];
+  RF --> F;
+  CV --> F;
+  LLM --> WS;
 ```
 
 ### B) Computer Vision Pipeline
@@ -51,12 +51,12 @@ Key ideas
 ### C) ML Personalization Pipeline
 
 ```mermaid
-flowchart LR
-  Raw[User + Dataset] --> Prep[Preprocess + Encode]
-  Prep --> FE[Feature Engineering (BMI, goal, BMR)]
-  FE --> Train[RandomForestRegressor Multi‑Output]
-  Train --> Save[joblib pipeline]
-  Save --> Serve[FastAPI /ai/personalize]
+flowchart LR;
+  RAW[User+Dataset] --> PRE[Preprocess+Encode];
+  PRE --> FE[Feature Eng (BMI, goal, BMR)];
+  FE --> TRAIN[RF Regressor MultiOutput];
+  TRAIN --> SAVE[joblib pipeline];
+  SAVE --> SERVE[FastAPI personalize];
 ```
 
 Predicts
