@@ -82,6 +82,13 @@ export const AppProvider = ({ children }) => {
           } else if (message.type === 'opponent_progress') {
             // Dispatch event for active components
             window.dispatchEvent(new CustomEvent('duel-progress', { detail: message }));
+          } else if (message.type === 'duel_finished') {
+            console.log('[AppContext] Duel Finished:', message);
+            // Broadcast a global event so active screens can react
+            window.dispatchEvent(new CustomEvent('duel-finished', { detail: message }));
+            // Mark duel as inactive
+            setDuelActive(false);
+            setDuelData(null);
           } else if (message.type === 'chat_received') {
             console.log('[AppContext] Chat Received:', message);
             
@@ -152,6 +159,18 @@ export const AppProvider = ({ children }) => {
         opponent_id: opponentId,
         reps
       }));
+    }
+  };
+
+  const sendDuelEnd = (reps, opponentId) => {
+    if (ws.current?.readyState === WebSocket.OPEN) {
+      ws.current.send(JSON.stringify({
+        type: 'duel_end',
+        opponent_id: opponentId,
+        reps
+      }));
+    } else {
+      console.warn('[AppContext] WS not connected, cannot send duel end');
     }
   };
 
@@ -314,7 +333,8 @@ export const AppProvider = ({ children }) => {
     sendDuelRequest,
     acceptDuel,
     rejectDuel,
-    sendDuelProgress
+    sendDuelProgress,
+    sendDuelEnd
   };
 
   return (

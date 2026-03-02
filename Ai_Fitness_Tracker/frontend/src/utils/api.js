@@ -91,6 +91,22 @@ export const resetPassword = async (token, newPassword) => {
   }
 };
 
+export const personalize = async (token, payload) => {
+  const response = await fetch(`${API_URL}/ai/personalize`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.detail || 'Personalization failed');
+  }
+  return data;
+};
+
 export const setupTOTP = async (token) => {
   try {
     const response = await fetch(`${AUTH_URL}/totp/setup`, {

@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     REDIS_PASSWORD: Optional[str] = None
     REDIS_DB: int = 0
     GROQ_API_KEY: Optional[str] = None
+    ELEVENLABS_API_KEY: Optional[str] = None
+    ELEVENLABS_VOICE_ID: Optional[str] = None
     WEB_BASE_URL: str = "http://localhost:3000"
     GOOGLE_CLIENT_ID: Optional[str] = None
     GOOGLE_CLIENT_SECRET: Optional[str] = None

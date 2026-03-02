@@ -1,6 +1,9 @@
 opencv-python==4.9.0.80
 mediapipe==0.10.11
 numpy==1.26.4
+pandas==2.2.2
+scikit-learn==1.5.2
+joblib==1.4.2
 speechrecognition==3.10.1
 pyaudio==0.2.14
 gTTS==2.5.1
@@ -14,6 +17,7 @@ fastapi==0.110.0
 uvicorn==0.27.1
 sqlalchemy==2.0.28
 passlib[bcrypt]==1.7.4
+bcrypt==3.2.2
 python-jose[cryptography]==3.3.0
 python-multipart==0.0.9
 pydantic-settings==2.2.1

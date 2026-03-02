@@ -22,6 +22,13 @@ from ...db.database import AsyncSessionLocal
 from ...db.models import User, ChatMessage
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from .voice_commands import get_user_context, format_fitness_summary
+try:
+    from ...core_ai.coach.llm_coach import client as llm_client
+    from ...core_ai.coach.llm_coach import PERSONA_PROMPTS
+except Exception:
+    llm_client = None
+    PERSONA_PROMPTS = {}
 
 router = APIRouter()
 
@@ -179,3 +186,70 @@ async def vision_websocket_endpoint(websocket: WebSocket):
     except Exception as e:
         print(f"Vision WS error: {e}")
         await websocket.close()
+
+@router.websocket("/ws/coach")
+async def coach_websocket_endpoint(websocket: WebSocket, token: Optional[str] = Query(None)):
+    await websocket.accept()
+    async with AsyncSessionLocal() as db:
+        user = None
+        if token:
+            user = await get_user_from_token(token, db)
+            if not user:
+                res = await db.execute(select(User).filter(User.username == token))
+                user = res.scalars().first()
+
+        if not user:
+            await websocket.close(code=1008)
+            return
+
+        chat_history = []  # keep conversation per connection
+
+        try:
+            while True:
+                data = await websocket.receive_text()
+                message = json.loads(data)
+                if message.get("type") == "ask":
+                    user_text = message.get("text") or "How am I doing?"
+                    persona = message.get("persona") or "supportive"
+                    session_context = message.get("session_context") or {}
+                    trend_data = await get_user_context(user, db)
+                    summary = format_fitness_summary(user, trend_data, session_context)
+                    if llm_client:
+                        try:
+                            system_prompt = PERSONA_PROMPTS.get(persona, PERSONA_PROMPTS.get("general", "You are a concise coach."))
+                            # Build messages with short context and memory
+                            messages = [{"role": "system", "content": system_prompt}]
+                            messages.append({"role": "user", "content": f"Fitness summary:\n{summary}"})
+                            messages.extend(chat_history[-6:])  # limit memory to last 3 exchanges
+                            messages.append({"role": "user", "content": user_text})
+
+                            await websocket.send_text(json.dumps({"type": "coach_reply_start"}))
+                            stream = await llm_client.chat.completions.create(
+                                model="llama-3.1-8b-instant",
+                                messages=messages,
+                                temperature=0.6,
+                                stream=True,
+                            )
+                            accum = []
+                            async for chunk in stream:
+                                delta = getattr(chunk.choices[0].delta, "content", None)
+                                if delta:
+                                    accum.append(delta)
+                                    await websocket.send_text(json.dumps({"type": "coach_delta", "delta": delta}))
+                            reply = "".join(accum).strip()
+                            chat_history.append({"role": "user", "content": user_text})
+                            chat_history.append({"role": "assistant", "content": reply})
+                            await websocket.send_text(json.dumps({"type": "coach_reply_end", "reply": reply}))
+                        except Exception as e:
+                            await websocket.send_text(json.dumps({"type": "coach_reply_end", "reply": "I'm currently unavailable. Please try again."}))
+                    else:
+                        await websocket.send_text(json.dumps({"type": "coach_reply_end", "reply": f"{persona}: {user_text}"}))
+                else:
+                    await websocket.send_text(json.dumps({"type": "ack"}))
+        except WebSocketDisconnect:
+            return
+        except Exception as e:
+            try:
+                await websocket.send_text(json.dumps({"type": "error", "message": str(e)}))
+            finally:
+                await websocket.close()

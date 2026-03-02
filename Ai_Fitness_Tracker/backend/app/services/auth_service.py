@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
 from ..db.repositories.user_repo import UserRepository
 from ..core.security import verify_password, create_access_token, hash_password, encrypt_totp_secret, decrypt_totp_secret
-from ..schemas.schemas import UserRegister, TokenResponse
+from ..schemas.schemas import UserRegister, TokenResponse, UserResponse
 from ..core.config import settings
 import smtplib
 from email.mime.text import MIMEText
@@ -25,6 +25,38 @@ TIME_WINDOW = 60  # seconds
 class AuthService:
     def __init__(self, db: AsyncSession):
         self.user_repo = UserRepository(db)
+    
+    def _serialize_user(self, user):
+        return {
+            "id": user.id,
+            "username": user.username,
+            "email": getattr(user, "email", None),
+            "streak": getattr(user, "streak", 0),
+            "xp": getattr(user, "xp", 0),
+            "points": getattr(user, "points", 0),
+            "level": getattr(user, "level", 1),
+            "bio": getattr(user, "bio", None),
+            "avatar_url": getattr(user, "avatar_url", None),
+            "profile_image": getattr(user, "profile_image", None),
+            "age": getattr(user, "age", None),
+            "height_cm": getattr(user, "height_cm", None),
+            "weight_kg": getattr(user, "weight_kg", None),
+            "body_type": getattr(user, "body_type", None),
+            "diet_goal": getattr(user, "diet_goal", None),
+            "activity_level": getattr(user, "activity_level", None),
+            "daily_sleep_goal": getattr(user, "daily_sleep_goal", None),
+            "daily_water_goal": getattr(user, "daily_water_goal", None),
+            "injuries": getattr(user, "injuries", None),
+            "dietary_preferences": getattr(user, "dietary_preferences", None),
+            "created_at": getattr(user, "created_at", None),
+            "total_workouts": getattr(user, "total_workouts", 0) if hasattr(user, "total_workouts") else 0,
+            "total_duration": getattr(user, "total_duration", 0) if hasattr(user, "total_duration") else 0,
+            "total_calories": getattr(user, "total_calories", 0.0) if hasattr(user, "total_calories") else 0.0,
+            "avg_score": getattr(user, "avg_score", 0.0) if hasattr(user, "avg_score") else 0.0,
+            "total_reps": getattr(user, "total_reps", 0) if hasattr(user, "total_reps") else 0,
+            "friendship_status": getattr(user, "friendship_status", None) if hasattr(user, "friendship_status") else None,
+            "is_totp_enabled": bool(getattr(user, "is_totp_enabled", False)),
+        }
 
     def _check_rate_limit(self, user_id: int):
         now = datetime.now()
@@ -54,7 +86,8 @@ class AuthService:
             )
         user = await self.user_repo.create(user_data)
         access_token = create_access_token(data={"sub": user.username})
-        response = {"access_token": access_token, "token_type": "bearer", "user": user}
+        user_schema = self._serialize_user(user)
+        response = {"access_token": access_token, "token_type": "bearer", "user": user_schema}
         print(f"DEBUG: register_user returning: {response.keys()}")
         return response
 
@@ -79,7 +112,8 @@ class AuthService:
             )
         
         access_token = create_access_token(data={"sub": user.username})
-        return {"access_token": access_token, "token_type": "bearer", "user": user}
+        user_schema = self._serialize_user(user)
+        return {"access_token": access_token, "token_type": "bearer", "user": user_schema}
 
     async def forgot_password(self, email: str):
         user = await self.user_repo.get_by_email(email)

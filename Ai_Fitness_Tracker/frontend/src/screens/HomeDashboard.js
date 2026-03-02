@@ -39,6 +39,8 @@ const HomeDashboard = () => {
   const [selectedRoutine, setSelectedRoutine] = useState(null);
   const [isPremium, setIsPremium] = useState(true);
   const [displayProgress, setDisplayProgress] = useState(0);
+  const [personalization, setPersonalization] = useState(null);
+  const [pLoading, setPLoading] = useState(false);
 
   const personas = [
     {
@@ -115,6 +117,28 @@ const HomeDashboard = () => {
     setRefreshing(true);
     await Promise.all([fetchDashboardData(), fetchRoutines()]);
     setRefreshing(false);
+  };
+
+  const fetchPersonalization = async () => {
+    try {
+      setPLoading(true);
+      const payload = {
+        age: user?.age || 25,
+        gender: 'male',
+        height_cm: user?.height_cm || 170,
+        weight_kg: user?.weight_kg || 70,
+        workout_type: 'general',
+        experience_level: 'Beginner',
+        workout_frequency: 3,
+        session_duration: 30
+      };
+      const data = await post('/ai/personalize', payload);
+      setPersonalization(data);
+    } catch (e) {
+      setPersonalization(null);
+    } finally {
+      setPLoading(false);
+    }
   };
 
   const handleStartWorkout = (personaId) => {
@@ -220,6 +244,40 @@ const HomeDashboard = () => {
           onRemove={handleRemoveWater}
         />
       </div>
+
+      <GlassCard className="mb-8 p-4">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Target size={16} className="text-primary" />
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-zinc-500">Personalization</span>
+          </div>
+          <button
+            onClick={fetchPersonalization}
+            className="text-[10px] px-3 py-1 rounded-full bg-primary text-black font-black tracking-widest"
+            disabled={pLoading}
+          >
+            {pLoading ? 'Loading...' : 'Personalize'}
+          </button>
+        </div>
+        {personalization ? (
+          <div className="grid grid-cols-3 gap-3 mt-2">
+            <div className="text-center">
+              <p className="text-xs text-zinc-500">Calories</p>
+              <p className="text-lg font-black">{Math.round(personalization.calories)}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-zinc-500">Water</p>
+              <p className="text-lg font-black">{Math.round(personalization.water)}L</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-zinc-500">Intensity</p>
+              <p className="text-lg font-black">{personalization.intensity}</p>
+            </div>
+          </div>
+        ) : (
+          <p className="text-xs text-zinc-500">Get tailored calories, water and intensity.</p>
+        )}
+      </GlassCard>
 
       {/* Diet Plan */}
       <div className="mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-400">

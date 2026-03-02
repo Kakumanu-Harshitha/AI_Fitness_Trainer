@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Any
 
 from ..dependencies import get_db, get_current_user
-from ...db.models import User, WorkoutLog
+from ...db.models import User, WorkoutLog, WaterLog
 from ...schemas.schemas import UserResponse
 
 router = APIRouter(prefix="/stats", tags=["Stats"])
@@ -75,16 +75,40 @@ async def get_user_stats(
         count = day_res.scalar() or 0
         weekly_workouts.append(int(count))
 
-    # 4. Joint Stress & Recovery (Calculated from recent activity)
-    # Joint Stress is inversely proportional to average posture score
-    stress_value = 100 - int(stats_row.avg_score or 90)
-    stress_level = "Low"
-    if stress_value > 60:
-        stress_level = "High"
-    elif stress_value > 30:
-        stress_level = "Moderate"
-    
-    # Recovery Rate decreases with total workouts in the last 24h
+    # 4. Joint Stress & Recovery (Refined calculations)
+    # Windowed load (last 48h)
+    last_48h = now - timedelta(hours=48)
+    load_query = select(
+        func.coalesce(func.sum(WorkoutLog.duration), 0).label("sum_duration_sec"),
+        func.coalesce(func.max(WorkoutLog.created_at), None).label("last_time")
+    ).where(
+        and_(
+            WorkoutLog.user_id == current_user.id,
+            WorkoutLog.created_at >= last_48h
+        )
+    )
+    load_res = await db.execute(load_query)
+    load_row = load_res.one()
+    total_minutes_48h = int((load_row.sum_duration_sec or 0) / 60)
+    last_workout_time = load_row.last_time
+    hours_since_last = 48.0
+    if last_workout_time:
+        hours_since_last = max(0.0, (now - last_workout_time).total_seconds() / 3600.0)
+
+    # Water intake today and goal
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    water_query = select(func.coalesce(func.sum(WaterLog.amount_ml), 0)).where(
+        and_(
+            WaterLog.user_id == current_user.id,
+            WaterLog.created_at >= today_start
+        )
+    )
+    water_res = await db.execute(water_query)
+    water_today_ml = int(water_res.scalar() or 0)
+    water_goal_ml = getattr(current_user, "daily_water_goal", None) or 2500
+    hydration_ratio = min(1.0, water_today_ml / water_goal_ml) if water_goal_ml > 0 else 0.0
+
+    # Acute load today (workouts count)
     recent_workouts_count = await db.execute(
         select(func.count(WorkoutLog.id)).where(
             and_(
@@ -93,8 +117,25 @@ async def get_user_stats(
             )
         )
     )
-    workouts_today = recent_workouts_count.scalar() or 0
-    recovery_rate = max(10, 100 - (workouts_today * 15))
+    workouts_today = int(recent_workouts_count.scalar() or 0)
+
+    # Joint Stress: blend form deficit, volume, and acute load
+    form_deficit = 100 - int(stats_row.avg_score or 85)
+    volume_penalty = min(30.0, (total_minutes_48h / 180.0) * 30.0)
+    acute_load = min(20.0, workouts_today * 10.0)
+    stress_value = max(0, min(100, int(0.6 * form_deficit + 0.3 * volume_penalty + 0.1 * acute_load)))
+    stress_level = "Low"
+    if stress_value > 60:
+        stress_level = "High"
+    elif stress_value > 30:
+        stress_level = "Moderate"
+
+    # Recovery Rate: rest time base adjusted by form, load, and hydration
+    recovery_base = min(100.0, (hours_since_last / 24.0) * 100.0)
+    form_factor = max(0.6, min(1.1, (stats_row.avg_score or 80) / 100.0))
+    fatigue_penalty = min(60.0, (total_minutes_48h / 180.0) * 60.0)
+    hydration_bonus = hydration_ratio * 10.0
+    recovery_rate = int(max(10.0, min(100.0, recovery_base * form_factor - fatigue_penalty + hydration_bonus)))
 
     # 5. Personal Bests (Normalized exercise names)
     # We'll use a subquery to normalize names and get max reps

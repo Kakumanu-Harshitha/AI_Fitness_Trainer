@@ -14,6 +14,12 @@ class UserCreate(UserBase):
 class UserLogin(BaseModel):
     username: str
     password: str
+    
+    @validator("password")
+    def validate_password_bytes(cls, v):
+        if len(v.encode("utf-8")) > 72:
+            raise ValueError("Password too long. Maximum 72 bytes.")
+        return v
 
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
@@ -21,10 +27,22 @@ class ForgotPasswordRequest(BaseModel):
 class ResetPasswordRequest(BaseModel):
     token: str
     new_password: str
+    
+    @validator("new_password")
+    def validate_new_password_bytes(cls, v):
+        if len(v.encode("utf-8")) > 72:
+            raise ValueError("Password too long. Maximum 72 bytes.")
+        return v
 
 class ChangePasswordRequest(BaseModel):
     new_password: str
     totp_code: Optional[str] = None
+    
+    @validator("new_password")
+    def validate_change_password_bytes(cls, v):
+        if len(v.encode("utf-8")) > 72:
+            raise ValueError("Password too long. Maximum 72 bytes.")
+        return v
 
 class TOTPSetupResponse(BaseModel):
     secret: str
@@ -35,6 +53,12 @@ class TOTPVerifyRequest(BaseModel):
 
 class UserRegister(UserBase):
     password: str
+    
+    @validator("password")
+    def validate_register_password_bytes(cls, v):
+        if len(v.encode("utf-8")) > 72:
+            raise ValueError("Password too long. Maximum 72 bytes.")
+        return v
 
 class UserResponse(UserBase):
     id: int

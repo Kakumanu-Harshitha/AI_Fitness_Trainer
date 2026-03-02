@@ -9,7 +9,6 @@ from .config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Derive encryption key from SECRET_KEY
 def get_fernet():
     key = hashlib.sha256(settings.SECRET_KEY.encode()).digest()
     return Fernet(base64.urlsafe_b64encode(key))
@@ -23,11 +22,16 @@ def decrypt_totp_secret(encrypted_secret: str) -> str:
     return f.decrypt(encrypted_secret.encode()).decode()
 
 def hash_password(password: str) -> str:
-    # Truncate to 72 bytes to avoid bcrypt error
-    return pwd_context.hash(password[:72])
+    b = password.encode("utf-8")
+    if len(b) > 72:
+        b = b[:72]
+    return pwd_context.hash(b)
 
 def verify_password(password: str, hashed: str) -> bool:
-    return pwd_context.verify(password[:72], hashed)
+    b = password.encode("utf-8")
+    if len(b) > 72:
+        b = b[:72]
+    return pwd_context.verify(b, hashed)
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()

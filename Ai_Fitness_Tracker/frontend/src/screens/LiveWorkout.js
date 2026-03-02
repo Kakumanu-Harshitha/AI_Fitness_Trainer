@@ -10,13 +10,13 @@ import { useWorkout } from '../contexts/WorkoutContext';
 import CameraView from '../components/CameraView';
 import GlassCard from '../components/GlassCard';
 import VoiceModal from '../components/VoiceModal';
-import { API_URL } from '../utils/api';
+import { API_URL, WS_URL } from '../utils/api';
 
 const LiveWorkout = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { routine, persona, duelMode, opponent } = location.state || {};
-    const { token, settings, sendDuelProgress } = useApp();
+    const { token, settings, sendDuelProgress, sendDuelEnd } = useApp();
     const {
         isActive,
         currentExercise,
@@ -33,13 +33,26 @@ const LiveWorkout = () => {
 
     const [isMuted, setIsMuted] = useState(false);
     const [isAudioEnabled, setIsAudioEnabled] = useState(false);
-    const [advice, setAdvice] = useState('Welcome! Adjust your camera to start.');
+    const [advice, setAdvice] = useState('');
     const [lastSpokenAdvice, setLastSpokenAdvice] = useState('');
     const [isVoiceModalVisible, setIsVoiceModalVisible] = useState(false);
     const [isCounting, setIsCounting] = useState(false);
     const cameraRef = useRef(null);
     const timerRef = useRef(null);
     const lastAdviceTime = useRef(0);
+    const [lastScoreData, setLastScoreData] = useState(null);
+    const [lastRepData, setLastRepData] = useState(null);
+    const lastLLMInstantTime = useRef(0);
+    const [heardText, setHeardText] = useState('');
+    const recognitionRef = useRef(null);
+    const coachWsRef = useRef(null);
+    const lastVoiceAskRef = useRef(0);
+    const lastHeardFinalRef = useRef('');
+    const lastRiskSignatureRef = useRef('');
+    const lastRiskAlertTimeRef = useRef(0);
+    const RESPONSIVE_ONLY = true;
+    const [sttError, setSttError] = useState('');
+    const [coachError, setCoachError] = useState('');
 
     const formatTime = (seconds) => {
         const mins = Math.floor(seconds / 60);
@@ -77,11 +90,214 @@ const LiveWorkout = () => {
         }
     }, [isActive, isCounting]);
 
+    useEffect(() => {
+        if (!token) return;
+        const url = `${WS_URL}/api/v1/ws/coach?token=${encodeURIComponent(token)}`;
+        let ws;
+        try {
+            ws = new WebSocket(url);
+        } catch (e) {
+            return;
+        }
+        coachWsRef.current = ws;
+        let streamBuffer = '';
+        ws.onmessage = (evt) => {
+            try {
+                const msg = JSON.parse(evt.data || '{}');
+                if (msg.type === 'coach_reply_start') {
+                    streamBuffer = '';
+                    setAdvice('...');
+                } else if (msg.type === 'coach_delta' && msg.delta) {
+                    streamBuffer += msg.delta;
+                    setAdvice(streamBuffer);
+                } else if (msg.type === 'coach_reply_end') {
+                    const reply = msg.reply || streamBuffer || '';
+                    setAdvice(reply);
+                    if (reply) speakAdvice(reply, true);
+                    streamBuffer = '';
+                } else if (msg.type === 'coach_reply' && msg.reply) {
+                    setAdvice(msg.reply);
+                    speakAdvice(msg.reply, true);
+                }
+            } catch (e) {}
+        };
+        ws.onerror = () => {
+            setCoachError('Coach connection error. Using fallback.');
+        };
+        ws.onclose = () => {
+            setCoachError('Coach disconnected. Will retry when you speak.');
+        };
+        return () => {
+            try { ws.close(); } catch (e) {}
+        };
+    }, [token]);
+
+    const sendCoachAsk = (text) => {
+        if (!text) return;
+        setCoachError('');
+        setAdvice('...');
+        if (coachWsRef.current && coachWsRef.current.readyState === 1) {
+            const ctx = {
+                reps: Number(lastRepData?.repCount || sessionStats.reps) || 0,
+                avg_score: Number(lastScoreData?.total || sessionStats.avgScore) || 0,
+                time: Number(sessionStats.time) || 0,
+                exercise: String(currentExercise || 'unknown'),
+                joint_scores: lastScoreData?.jointScores || null,
+                risks: lastScoreData?.risks || null,
+            };
+            const payload = {
+                type: 'ask',
+                text,
+                persona: persona || 'supportive',
+                session_context: ctx,
+            };
+            try {
+                coachWsRef.current.send(JSON.stringify(payload));
+                return;
+            } catch (e) {
+                // fall through to HTTP
+            }
+        }
+        // HTTP fallback when WS is unavailable
+        (async () => {
+            try {
+                const ctx = {
+                    reps: Number(lastRepData?.repCount || sessionStats.reps) || 0,
+                    avg_score: Number(lastScoreData?.total || sessionStats.avgScore) || 0,
+                    time: Number(sessionStats.time) || 0,
+                    exercise: String(currentExercise || 'unknown'),
+                    joint_scores: lastScoreData?.jointScores || null,
+                    risks: lastScoreData?.risks || null,
+                };
+                const res = await fetch(`${API_URL}/voice/process`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    },
+                    body: JSON.stringify({
+                        command: text,
+                        persona: persona || 'supportive',
+                        session_context: ctx
+                    })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok && data?.response) {
+                    setAdvice(data.response);
+                    speakAdvice(data.response, true);
+                } else {
+                    setCoachError('Coach unavailable. Please try again.');
+                }
+            } catch (e) {
+                setCoachError('Coach connection failed. Check network.');
+            }
+        })();
+    };
+
+    const shouldAsk = (text) => {
+        if (!text) return false;
+        const t = String(text).trim().toLowerCase();
+        if (t.endsWith('?')) return true;
+        if (/\bcoach\b/.test(t)) return true;
+        if (t.startsWith('how ') || t.startsWith('what ') || t.startsWith('should ') || t.startsWith('can ')) return true;
+        return false;
+    };
+
+    const interimTimerRef = useRef(null);
+    const lastInterimTextRef = useRef('');
+    const tryStartRecognition = () => {
+        const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!Rec) return;
+        if (recognitionRef.current) {
+            try { recognitionRef.current.stop(); } catch (e) {}
+            recognitionRef.current = null;
+        }
+        const rec = new Rec();
+        rec.continuous = true;
+        rec.interimResults = true;
+        rec.lang = 'en-US';
+        rec.onresult = (event) => {
+            let interim = '';
+            let finalText = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    finalText += transcript;
+                } else {
+                    interim += transcript;
+                }
+            }
+            const display = (finalText || interim).trim();
+            if (display) setHeardText(display);
+            if (finalText) {
+                const cleaned = finalText.trim();
+                const now = Date.now();
+                // Always send final utterances to the coach (less restrictive)
+                if (cleaned && cleaned !== lastHeardFinalRef.current && now - lastVoiceAskRef.current > 1500) {
+                    lastHeardFinalRef.current = cleaned;
+                    lastVoiceAskRef.current = now;
+                    sendCoachAsk(cleaned);
+                }
+                if (interimTimerRef.current) {
+                    clearTimeout(interimTimerRef.current);
+                    interimTimerRef.current = null;
+                }
+                lastInterimTextRef.current = '';
+            } else if (interim) {
+                const cleaned = interim.trim();
+                if (cleaned !== lastInterimTextRef.current) {
+                    lastInterimTextRef.current = cleaned;
+                    if (interimTimerRef.current) {
+                        clearTimeout(interimTimerRef.current);
+                    }
+                    interimTimerRef.current = setTimeout(() => {
+                        const candidate = lastInterimTextRef.current;
+                        if (candidate && shouldAsk(candidate)) {
+                            const now2 = Date.now();
+                            if (now2 - lastVoiceAskRef.current > 2000) {
+                                lastHeardFinalRef.current = candidate;
+                                lastVoiceAskRef.current = now2;
+                                sendCoachAsk(candidate);
+                            }
+                        }
+                    }, 700);
+                }
+            }
+        };
+        rec.onend = () => {
+            if (phase === 'workout' && isAudioEnabled) {
+                try { rec.start(); } catch (e) {}
+            }
+        };
+        rec.onerror = (e) => {
+            setSttError(String(e?.error || 'not-allowed'));
+        };
+        recognitionRef.current = rec;
+        try { rec.start(); } catch (e) {}
+    };
+
+    useEffect(() => {
+        if (phase === 'workout' && isAudioEnabled) {
+            tryStartRecognition();
+        } else {
+            if (recognitionRef.current) {
+                try { recognitionRef.current.stop(); } catch (e) {}
+                recognitionRef.current = null;
+            }
+        }
+        return () => {
+            if (recognitionRef.current) {
+                try { recognitionRef.current.stop(); } catch (e) {}
+                recognitionRef.current = null;
+            }
+        };
+    }, [phase, isAudioEnabled]);
+
     // Speech handler
     const speakAdvice = (text, force = false) => {
         const isVoiceEnabled = settings?.voiceCoachEnabled !== false;
         
-        if (isMuted || !isVoiceEnabled || !text || phase === 'rest') {
+        if (isMuted || !isVoiceEnabled || !text || phase === 'rest' || (!isAudioEnabled && !force)) {
             return;
         }
 
@@ -102,38 +318,34 @@ const LiveWorkout = () => {
                 if (!window.speechSynthesis.speaking || force) {
                     const utterance = new SpeechSynthesisUtterance(text);
                     const activePersona = persona || 'supportive';
-                    
-                    // Simplified voice config for web
                     utterance.rate = activePersona === 'drill_sergeant' ? 1.1 : 1.0;
                     utterance.pitch = activePersona === 'zen_coach' ? 0.9 : 1.0;
                     utterance.volume = 1.0;
-                    
+                    // Pause STT while speaking to avoid echo
+                    const rec = recognitionRef.current;
+                    let restart = false;
+                    if (rec) {
+                        try { rec.stop(); } catch (e) {}
+                        restart = true;
+                    }
+                    utterance.onend = () => {
+                        if (restart && phase === 'workout') {
+                            tryStartRecognition();
+                        }
+                    };
                     window.speechSynthesis.speak(utterance);
                 }
             }
         }
     };
 
-    useEffect(() => {
-        if (advice && advice !== 'Starting your session...') {
-            speakAdvice(advice);
-        }
-    }, [advice]);
+    // Removed auto-speak on any advice update; we speak explicitly when needed
 
     useEffect(() => {
         if (phase === 'workout' && !timerRef.current) {
-            // Initial greeting when workout starts
             if (!isAudioEnabled) {
-                const greetings = {
-                    supportive: "Hello! I'm your supportive coach. Let's have a great workout together!",
-                    drill_sergeant: "ATTENTION! I'M YOUR DRILL SERGEANT. NO SLACKING OFF! MOVE!",
-                    zen_coach: "Welcome. Let us find focus and harmony in our movement today."
-                };
-                const selectedPersona = persona || 'supportive';
-                setAdvice(greetings[selectedPersona] || greetings.supportive);
                 setIsAudioEnabled(true);
             }
-
             timerRef.current = setInterval(() => {
                 incrementTime();
             }, 1000);
@@ -155,6 +367,8 @@ const LiveWorkout = () => {
                 calories: Number(sessionStats.calories) || 0,
                 time: Number(sessionStats.time) || 0,
                 exercise: String(currentExercise || 'unknown'),
+                joint_scores: lastScoreData?.jointScores || null,
+                risks: lastScoreData?.risks || null,
             };
 
             const response = await fetch(`${API_URL}/voice/process`, {
@@ -186,6 +400,15 @@ const LiveWorkout = () => {
         // Get the latest stats before completing
         const finalStats = completeWorkout();
         console.log('[LiveWorkout] Final stats for summary:', finalStats);
+        
+        // If in duel mode, notify opponent that we finished with final reps
+        try {
+            if (duelMode && opponent?.username) {
+                sendDuelEnd(Number(finalStats.reps) || 0, opponent.username);
+            }
+        } catch (e) {
+            console.warn('[LiveWorkout] Failed to send duel end:', e);
+        }
         
         try {
             if (!token) {
@@ -260,6 +483,15 @@ const LiveWorkout = () => {
         setIsMuted(!isMuted);
         if (!isAudioEnabled) setIsAudioEnabled(true);
     };
+    const handleEnableVoice = () => {
+        if (!isAudioEnabled) {
+            setIsAudioEnabled(true);
+            const u = new SpeechSynthesisUtterance('Voice coach enabled');
+            try { window.speechSynthesis.cancel(); } catch (e) {}
+            try { window.speechSynthesis.speak(u); } catch (e) {}
+            tryStartRecognition();
+        }
+    };
 
     const [isProactiveLoading, setIsProactiveLoading] = useState(false);
     const lastLLMRepCount = useRef(0);
@@ -283,7 +515,23 @@ const LiveWorkout = () => {
         };
 
         window.addEventListener('duel-progress', handleDuelProgress);
-        return () => window.removeEventListener('duel-progress', handleDuelProgress);
+        
+        // Listen for explicit duel-finished message from opponent
+        const handleDuelFinished = (e) => {
+            const detail = e.detail || {};
+            // If opponent finished first and we haven't set a result, mark as lost
+            if (!duelResult) {
+                setDuelResult('lost');
+                pauseWorkout();
+                speakAdvice("Opponent has finished the duel.");
+            }
+        };
+        window.addEventListener('duel-finished', handleDuelFinished);
+
+        return () => {
+            window.removeEventListener('duel-progress', handleDuelProgress);
+            window.removeEventListener('duel-finished', handleDuelFinished);
+        };
     }, [duelMode, opponent, duelResult]);
 
     // ... (rest of the code)
@@ -296,23 +544,74 @@ const LiveWorkout = () => {
                 const result = updateWorkoutStats(landmarks);
                 
                 if (result) {
+                    setLastScoreData(result.score || null);
+                    setLastRepData(result.reps || null);
                     // Duel Progress Update
                     if (duelMode && result.reps && result.reps.repCount > 0) {
                         sendDuelProgress(result.reps.repCount, opponent?.username);
                         if (result.reps.repCount >= 20 && !duelResult) {
+                            try {
+                                if (opponent?.username) {
+                                    sendDuelEnd(result.reps.repCount, opponent.username);
+                                }
+                            } catch (e) {
+                                console.warn('[LiveWorkout] Failed to send duel end on win:', e);
+                            }
                             setDuelResult('won');
                             pauseWorkout();
                             speakAdvice("Congratulations! You won the duel!");
                         }
                     }
 
-                    if (result.advice) {
-                        setAdvice(result.advice);
+                    const hasRisks = Array.isArray(result?.score?.risks) && result.score.risks.length > 0;
+                    if (!RESPONSIVE_ONLY && hasRisks && token) {
+                        const signature = JSON.stringify((result.score.risks || []).map(r => r.type).sort());
+                        const now = Date.now();
+                        const transition = signature !== lastRiskSignatureRef.current;
+                        const cooldownPassed = now - lastRiskAlertTimeRef.current > 10000;
+                        if (transition || cooldownPassed) {
+                            lastRiskSignatureRef.current = signature;
+                            lastRiskAlertTimeRef.current = now;
+                            lastLLMInstantTime.current = now;
+                        try {
+                            const ctx = {
+                                reps: Number(result?.reps?.repCount || sessionStats.reps) || 0,
+                                avg_score: Number(result?.score?.total || sessionStats.avgScore) || 0,
+                                time: Number(sessionStats.time) || 0,
+                                exercise: String(currentExercise || 'unknown'),
+                                joint_scores: result?.score?.jointScores || null,
+                                risks: result?.score?.risks || null,
+                            };
+                            const res = await fetch(`${API_URL}/voice/process`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`,
+                                },
+                                body: JSON.stringify({
+                                    command: "Give an immediate one-sentence corrective cue for my current form.",
+                                    persona: persona || 'supportive',
+                                    session_context: ctx
+                                }),
+                            });
+                            if (res.ok) {
+                                const data = await res.json();
+                                if (data?.response) {
+                                    setAdvice(data.response);
+                                    speakAdvice(data.response);
+                                }
+                            } else {
+                                // no-op
+                            }
+                        } catch (e) {
+                            // no-op
+                        }
+                        }
                     }
 
-                    // Proactive LLM Advice every 10 reps or on significant events
+                    // Proactive LLM Advice every 10 reps (disabled in responsive-only mode)
                     const currentReps = result.reps?.repCount || 0;
-                    if (currentReps > 0 && currentReps % 10 === 0 && currentReps !== lastLLMRepCount.current && !isProactiveLoading) {
+                    if (!RESPONSIVE_ONLY && currentReps > 0 && currentReps % 10 === 0 && currentReps !== lastLLMRepCount.current && !isProactiveLoading) {
                         lastLLMRepCount.current = currentReps;
                         getProactiveAdvice(currentReps);
                     }
@@ -333,7 +632,9 @@ const LiveWorkout = () => {
                 avg_score: sessionStats.avgScore,
                 calories: sessionStats.calories,
                 time: sessionStats.time,
-                exercise: currentExercise || 'squat'
+                exercise: currentExercise || 'squat',
+                joint_scores: lastScoreData?.jointScores || null,
+                risks: lastScoreData?.risks || null,
             };
 
             const response = await fetch(`${API_URL}/voice/process`, {
@@ -432,12 +733,26 @@ const LiveWorkout = () => {
             {!isAudioEnabled && (
                 <div className="relative z-20 flex justify-center mt-4 px-6">
                     <button 
-                        onClick={() => setIsAudioEnabled(true)}
+                        onClick={handleEnableVoice}
                         className="bg-primary text-black px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-lg animate-bounce"
                     >
                         <Volume2 size={16} />
                         Tap to Enable Voice Coach
                     </button>
+                </div>
+            )}
+            {!!sttError && isAudioEnabled && (
+                <div className="relative z-20 flex justify-center mt-2 px-6">
+                    <div className="bg-red-500 text-white px-3 py-2 rounded-md text-xs font-bold">
+                        Microphone blocked. Allow mic access in browser settings.
+                    </div>
+                </div>
+            )}
+            {!!coachError && (
+                <div className="relative z-20 flex justify-center mt-2 px-6">
+                    <div className="bg-yellow-500 text-black px-3 py-2 rounded-md text-xs font-black">
+                        {coachError}
+                    </div>
                 </div>
             )}
 
@@ -486,6 +801,22 @@ const LiveWorkout = () => {
 
             {/* Bottom Controls Overlay */}
             <div className="relative z-10 p-6 space-y-6 bg-gradient-to-t from-white/90 dark:from-black/80 to-transparent transition-colors duration-300">
+                {heardText ? (
+                    <GlassCard className="p-3 flex items-center gap-3">
+                        <div className="w-7 h-7 rounded-md bg-primary/20 flex items-center justify-center text-primary font-black text-[10px] uppercase">You</div>
+                        <p className="text-sm font-bold text-gray-900 dark:text-white/90 leading-tight line-clamp-1">
+                            {heardText}
+                        </p>
+                    </GlassCard>
+                ) : null}
+                {advice ? (
+                    <GlassCard className="p-3 flex items-center gap-3">
+                        <div className="w-7 h-7 rounded-md bg-primary/20 flex items-center justify-center text-primary font-black text-[10px] uppercase">Coach</div>
+                        <p className="text-sm font-bold text-gray-900 dark:text-white/90 leading-tight line-clamp-2">
+                            {advice}
+                        </p>
+                    </GlassCard>
+                ) : null}
                 {/* Feedback Card */}
                 <GlassCard className="p-4 flex flex-col gap-4">
                     <div className="flex items-center justify-between border-b border-gray-200 dark:border-white/5 pb-3">

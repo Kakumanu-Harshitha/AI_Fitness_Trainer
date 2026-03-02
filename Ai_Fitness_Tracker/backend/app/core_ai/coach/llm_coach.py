@@ -4,8 +4,8 @@ from dotenv import load_dotenv
 from typing import AsyncGenerator
 
 load_dotenv()
-
-client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
+_API_KEY = os.getenv("GROQ_API_KEY")
+client = AsyncGroq(api_key=_API_KEY) if _API_KEY else None
 
 SYSTEM_PROMPT = """
 You are an elite AI fitness coach specializing in biomechanics and long-term performance.
@@ -44,6 +44,8 @@ Rules:
 }
 
 async def ask_llm_async(fitness_summary: str, user_message: str = None, persona: str = "general") -> str:
+    if client is None:
+        raise RuntimeError("Missing GROQ_API_KEY for LLM client")
     system_prompt = PERSONA_PROMPTS.get(persona, SYSTEM_PROMPT)
     
     messages = [
@@ -63,6 +65,8 @@ async def ask_llm_async(fitness_summary: str, user_message: str = None, persona:
     return response.choices[0].message.content.strip()
 
 async def stream_llm_async(fitness_summary: str, user_message: str = None, persona: str = "general") -> AsyncGenerator[str, None]:
+    if client is None:
+        raise RuntimeError("Missing GROQ_API_KEY for LLM client")
     system_prompt = PERSONA_PROMPTS.get(persona, SYSTEM_PROMPT)
     
     messages = [

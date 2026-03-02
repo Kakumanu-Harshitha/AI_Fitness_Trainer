@@ -12,9 +12,22 @@ __pycache__/
 .coverage
 htmlcov/
 
+# Python virtual environments
+venv/
+venv*/
+*/venv/
+*/venv*/
+**/.venv/
+**/venv/
+**/venv*/
+backend/venv/
+backend/venv310/
+backend/.venv/
+
 # Databases
 *.db
 *.sqlite3
+*.sqlite
 
 # Node.js
 node_modules/

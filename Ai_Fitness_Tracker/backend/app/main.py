@@ -22,6 +22,7 @@ from .api.v1.voice_commands import router as voice_router
 from .api.v1.websockets import router as ws_router
 from .api.v1.water import router as water_router
 from .api.v1.chatbot import router as chatbot_router
+from .api.v1.ai import router as ai_router
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -106,6 +107,7 @@ app.include_router(voice_router, prefix=settings.API_V1_STR)
 app.include_router(ws_router, prefix=settings.API_V1_STR)
 app.include_router(water_router, prefix=settings.API_V1_STR)
 app.include_router(chatbot_router, prefix=settings.API_V1_STR)
+app.include_router(ai_router, prefix=settings.API_V1_STR)
 
 # Add RateLimitMiddleware
 app.add_middleware(RateLimitMiddleware, redis_service=redis_service, limit=100, window=60)
@@ -113,8 +115,11 @@ app.add_middleware(RateLimitMiddleware, redis_service=redis_service, limit=100, 
 # CORS configuration (Added LAST so it wraps everything else and runs FIRST for requests)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:8081"], # Explicitly list allowed origins
-    allow_origin_regex="https?://.*", # Allow all http/https origins for development flexibility
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://0.0.0.0:3000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -82,6 +82,22 @@ def format_fitness_summary(user: User, trend_data: Dict[str, Any], session_conte
             f"- Current Posture Score: {session_context.get('avg_score', 0)}%\n"
             f"- Time Elapsed: {session_context.get('time', 0)}s\n"
         )
+        js = session_context.get("joint_scores")
+        if isinstance(js, dict) and js:
+            pairs = []
+            for k, v in js.items():
+                try:
+                    pairs.append(f"{k}:{int(v)}")
+                except Exception:
+                    pairs.append(f"{k}:{v}")
+            summary += f"- Joint Scores: {', '.join(pairs)}\n"
+        risks = session_context.get("risks")
+        if isinstance(risks, list) and risks:
+            try:
+                rtxt = ", ".join([r.get("type", str(r)) if isinstance(r, dict) else str(r) for r in risks])
+            except Exception:
+                rtxt = str(risks)
+            summary += f"- Risks: {rtxt}\n"
     else:
         summary += (
             f"Last Session Exercise: {trend_data['latest_exercise']}\n"
@@ -90,6 +106,14 @@ def format_fitness_summary(user: User, trend_data: Dict[str, Any], session_conte
         )
         
     return summary
+
+@router.get("/health")
+async def voice_health():
+    try:
+        test = await ask_llm_async("ping", "Short ping response", "general")
+        return {"llm_ok": True, "reply": test[:80]}
+    except Exception as e:
+        return {"llm_ok": False, "error": str(e)}
 
 @router.post("/process")
 async def process_voice_command(

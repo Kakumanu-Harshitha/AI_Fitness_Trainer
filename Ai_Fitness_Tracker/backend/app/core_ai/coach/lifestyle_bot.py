@@ -136,3 +136,109 @@ async def ask_lifestyle_bot(user_context: Dict[str, Any], user_message: str) -> 
     except Exception as e:
         print(f"LLM Error: {e}")
         return "I'm having trouble connecting to my brain right now. Please try again later."
+
+FORMATTED_PLAN_INSTRUCTIONS = """
+You are an AI fitness coach integrated into a modern fitness application.
+
+Your response MUST be clean, structured, and easy to display in a UI.
+DO NOT write long paragraphs.
+DO NOT return plain text blocks.
+
+FORMAT YOUR RESPONSE STRICTLY LIKE THIS:
+
+### 🏋️ Workout Plan
+- Warm-up: (short description)
+- Main Exercises:
+  - Exercise 1 (sets x reps)
+  - Exercise 2 (sets x reps)
+- Cool-down: (short description)
+
+### 🥗 Diet Plan
+- Breakfast: (short)
+- Lunch: (short)
+- Dinner: (short)
+- Snacks: (optional)
+
+### 💧 Hydration
+- Daily Water Intake: (in liters)
+- Tips: (1–2 short points)
+
+### 📊 Explanation
+- 2–3 short bullet points explaining WHY this plan suits the user
+
+RULES:
+- Use bullet points ONLY (no paragraphs)
+- Keep each line SHORT (max 1 sentence)
+- Use simple, clean language
+- No unnecessary text
+- No markdown errors
+- No extra headings
+- No emojis except the section headers above
+"""
+
+async def ask_coach_formatted(user_context: Dict[str, Any], preds: Dict[str, Any], user_query: str) -> str:
+    if not client:
+        # Minimal deterministic fallback in case LLM is unavailable
+        water_l = preds.get("water", 2.5)
+        return (
+            "### 🏋️ Workout Plan\n"
+            "- Warm-up: 5 min brisk walk + mobility\n"
+            "- Main Exercises:\n"
+            "  - Bike HIIT 8×(30s hard/60s easy)\n"
+            "  - Leg press 3×12\n"
+            "  - Bodyweight squats 3×12\n"
+            "- Cool-down: 5 min easy spin + stretches\n\n"
+            "### 🥗 Diet Plan\n"
+            "- Breakfast: Greek yogurt, berries, oats\n"
+            "- Lunch: Chicken, quinoa, mixed greens\n"
+            "- Dinner: Salmon, veggies, sweet potato\n"
+            "- Snacks: Cottage cheese, apple\n\n"
+            "### 💧 Hydration\n"
+            f"- Daily Water Intake: {round(float(water_l),2)} L\n"
+            "- Tips: Sip evenly; add electrolytes for HIIT\n\n"
+            "### 📊 Explanation\n"
+            "- Matches goals and current fitness level\n"
+            "- Balances HIIT and strength safely\n"
+            "- High protein supports recovery\n"
+        )
+
+    formatted_user = {
+        "username": user_context.get("username"),
+        "age": user_context.get("age"),
+        "height_cm": user_context.get("height_cm"),
+        "weight_kg": user_context.get("weight_kg"),
+        "body_type": user_context.get("body_type"),
+        "activity_level": user_context.get("activity_level"),
+        "diet_goal": user_context.get("diet_goal"),
+        "daily_sleep_goal": user_context.get("daily_sleep_goal"),
+        "daily_water_goal": user_context.get("daily_water_goal"),
+        "injuries": user_context.get("injuries"),
+        "dietary_preferences": user_context.get("dietary_preferences"),
+    }
+
+    prompt = (
+        FORMATTED_PLAN_INSTRUCTIONS
+        + "\n\nUSER DATA:\n"
+        + str(formatted_user)
+        + "\n\nMODEL OUTPUT:\n"
+        + f"- Calories: {preds.get('calories')}\n"
+        + f"- Water: {preds.get('water')}\n"
+        + f"- Intensity: {preds.get('intensity')}\n"
+        + "\nUSER QUERY:\n"
+        + user_query
+    )
+
+    try:
+        response = await client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {"role": "system", "content": "Return ONLY the specified markdown sections and bullets."},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.4,
+            max_tokens=500,
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        print(f"LLM Formatted Error: {e}")
+        return "### 🏋️ Workout Plan\n- Warm-up: 5 min brisk walk\n- Main Exercises:\n  - Bodyweight squats 3×12\n  - Lunges 3×10/leg\n- Cool-down: stretches\n\n### 🥗 Diet Plan\n- Breakfast: Yogurt + oats\n- Lunch: Chicken + quinoa\n- Dinner: Fish + veggies\n- Snacks: Fruit\n\n### 💧 Hydration\n- Daily Water Intake: 2.5 L\n- Tips: Sip evenly; add electrolytes\n\n### 📊 Explanation\n- Simple, safe starter plan\n- Supports fat loss and recovery\n- Matches experience level\n"
