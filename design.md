@@ -6,12 +6,12 @@
 ### 1.1 Architecture Diagram (Conceptual)
 ```mermaid
 graph TD
-    User[Webcam/Browser] -->|Local Inference| AI[MediaPipe Pose (Client-Side)]
-    AI -->|Valid Reps/Angles| Frontend[React SPA]
-    Frontend -->|REST API (Auth, History)| API[FastAPI Gateway]
-    Frontend -->|WebSocket (Chat, Leaderboard)| WS[WebSocket Manager]
-    API -->|Async ORM| DB[(PostgreSQL)]
-    WS -->|Pub/Sub| DB
+    User["Webcam/Browser"] -->|Local Inference| AI["MediaPipe Pose (Client-Side)"]
+    AI -->|Valid Reps/Angles| Frontend["React SPA"]
+    Frontend -->|"REST API (Auth, History)"| API["FastAPI Gateway"]
+    Frontend -->|"WebSocket (Chat, Leaderboard)"| WS["WebSocket Manager"]
+    API -->|"Async ORM"| DB[("PostgreSQL")]
+    WS -->|"Pub/Sub"| DB
 ```
 
 ### 1.2 Key Architectural Decisions
