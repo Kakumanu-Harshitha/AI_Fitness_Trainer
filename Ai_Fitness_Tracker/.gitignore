@@ -2,7 +2,7 @@
 .env
 .env.*
 *.env
-
+fitness/
 # Python cache and artifacts
 __pycache__/
 *.pyc
