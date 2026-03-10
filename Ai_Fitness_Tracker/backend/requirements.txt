@@ -5,9 +5,9 @@ pandas==2.2.2
 scikit-learn==1.5.2
 joblib==1.4.2
 speechrecognition==3.10.1
-pyaudio==0.2.14
+# pyaudio removed (hardware dependent)
 gTTS==2.5.1
-playsound3==3.0.0
+# playsound3 removed (hardware dependent)
 python-dotenv==1.0.1
 psycopg2-binary==2.9.9
 matplotlib==3.8.3
