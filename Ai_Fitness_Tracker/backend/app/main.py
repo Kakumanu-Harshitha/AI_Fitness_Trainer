@@ -41,7 +41,7 @@ app.add_middleware(
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://0.0.0.0:3000",
-        "https://fitvision-ai.onrender.com",  # Render deployed frontend
+        "https://fitvision-ai-fitness-tracker.netlify.app",  # Netlify deployed frontend
         settings.WEB_BASE_URL,               # Configurable via .env
     ],
     allow_credentials=True,

@@ -13,14 +13,14 @@ const getApiBaseUrl = () => {
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
     // If we're on localhost, use 127.0.0.1 to avoid IPv6 issues
-    if (hostname === 'localhost') {
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
       return 'http://127.0.0.1:8000';
     }
-    // Otherwise use the Render URL for remote testing from mobile etc.
+    // Production: frontend on Netlify, backend on Render
     return 'https://fitvision-ai.onrender.com';
   }
 
-  // Fallback for non-browser environments or when hostname can't be trusted
+  // Fallback for non-browser environments
   return 'https://fitvision-ai.onrender.com';
 };
 
